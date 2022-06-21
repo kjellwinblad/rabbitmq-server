@@ -46,7 +46,8 @@
          is_server_named_allowed/1,
          arguments/1,
          arguments/2,
-         notify_decorators/1
+         notify_decorators/1,
+         publish_at_most_once/2
          ]).
 
 -type queue_name() :: rabbit_amqqueue:name().
@@ -182,7 +183,7 @@
     {protocol_error, Type :: atom(), Reason :: string(), Args :: term()}.
 
 -callback deliver([{amqqueue:amqqueue(), queue_state()}],
-                  Delivery :: term(),
+                  Delivery :: mc:state(),
                   Options :: delivery_options()) ->
     {[{amqqueue:amqqueue(), queue_state()}], actions()}.
 
@@ -482,7 +483,26 @@ module(QRef, State) ->
             {error, not_found}
     end.
 
--spec deliver([amqqueue:amqqueue()], Delivery :: term(),
+%% convenience function for throwaway publishes
+-spec publish_at_most_once(rabbit_types:exchange() |
+                           rabbit_exchange:name(),
+                           mc:state()) ->
+    ok | {error, not_found}.
+publish_at_most_once(#resource{} = XName, Msg) ->
+    case rabbit_exchange:lookup(XName) of
+        {ok, X} ->
+            publish_at_most_once(X, Msg);
+        Err ->
+            Err
+    end;
+publish_at_most_once(X, Msg)
+  when element(1, X) == exchange -> % hacky but good enough
+    Qs = rabbit_amqqueue:lookup(rabbit_exchange:route(X, Msg)),
+    _ = deliver(Qs, Msg, #{}, stateless),
+    ok.
+
+-spec deliver([amqqueue:amqqueue()],
+              Message :: mc:state(),
               delivery_options(),
               stateless | state()) ->
     {ok, state(), actions()} | {error, Reason :: term()}.

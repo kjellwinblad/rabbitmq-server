@@ -1307,25 +1307,25 @@ handle_method(#'basic.publish'{exchange    = ExchangeNameBin,
                 Opts = maps_put_truthy(flow, Flow, #{correlation => SeqNo}),
                 {Opts, State0#ch{publish_seqno = SeqNo + 1}}
         end,
-    case rabbit_basic:message_no_id(ExchangeName, RoutingKey, DecodedContent) of
-        {ok, Message} ->
-            QNames = rabbit_exchange:route(Exchange, Message),
-            Queues = rabbit_amqqueue:lookup(QNames),
-            ok = process_routing_mandatory(Mandatory, Queues, Message, State0),
-            rabbit_trace:tap_in(Message, QNames, ConnName, ChannelNum,
-                                Username, TraceState),
-            %% TODO: call delivery_to_queues with plain args
-            DQ = {Message, DeliveryOptions, Queues},
-            {noreply, case Tx of
-                          none ->
-                              deliver_to_queues(DQ, State1);
-                          {Msgs, Acks} ->
-                              Msgs1 = ?QUEUE:in(DQ, Msgs),
-                              State1#ch{tx = {Msgs1, Acks}}
-                      end};
-        {error, Reason} ->
-            precondition_failed("invalid message: ~tp", [Reason])
-    end;
+    Message = rabbit_mc_amqp_legacy:message(ExchangeNameBin,
+                                            RoutingKey,
+                                            DecodedContent),
+    QNames = rabbit_exchange:route(Exchange, Message),
+    [rabbit_channel:deliver_reply(RK, Message) ||
+     {virtual_reply_queue, RK} <- QNames],
+    Queues = rabbit_amqqueue:lookup(QNames),
+    ok = process_routing_mandatory(Mandatory, Queues, Message, State0),
+    rabbit_trace:tap_in(Message, QNames, ConnName, ChannelNum,
+                        Username, TraceState),
+    %% TODO: call delivery_to_queues with plain args
+    DQ = {Message, DeliveryOptions, Queues},
+    {noreply, case Tx of
+                  none ->
+                      deliver_to_queues(ExchangeName, DQ, State1);
+                  {Msgs, Acks} ->
+                      Msgs1 = ?QUEUE:in(DQ, Msgs),
+                      State1#ch{tx = {Msgs1, Acks}}
+              end};
 
 handle_method(#'basic.nack'{delivery_tag = DeliveryTag,
                             multiple     = Multiple,
@@ -2148,17 +2148,23 @@ notify_limiter(Limiter, Acked) ->
                  end
     end.
 
-deliver_to_queues({#basic_message{exchange_name = XName},
-                   Options,
-                   _RoutedToQueues = []}, State)
+deliver_to_queues({Message, _Options, _RoutedToQueues = []} = Delivery,
+                  #ch{cfg = #conf{virtual_host = VHost}} = State) ->
+    XNameBin = mc:get_annotation(exchange, Message),
+    XName = rabbit_misc:r(VHost, exchange,  XNameBin),
+    deliver_to_queues(XName, Delivery, State).
+
+deliver_to_queues(XName,
+                  {_Message, Options, _RoutedToQueues = []},
+                  State)
   when not is_map_key(correlation, Options) -> %% optimisation when there are no queues
     ?INCR_STATS(exchange_stats, XName, 1, publish, State),
     rabbit_global_counters:messages_unroutable_dropped(amqp091, 1),
     ?INCR_STATS(exchange_stats, XName, 1, drop_unroutable, State),
     State;
-deliver_to_queues({#basic_message{exchange_name = XName} = Message,
-                   Options,
-                   RoutedToQueues}, State0 = #ch{queue_states = QueueStates0}) ->
+deliver_to_queues(XName,
+                  {Message, Options, RoutedToQueues},
+                  State0 = #ch{queue_states = QueueStates0}) ->
     Qs = rabbit_amqqueue:prepend_extra_bcc(RoutedToQueues),
     case rabbit_queue_type:deliver(Qs, Message, Options, QueueStates0) of
         {ok, QueueStates, Actions}  ->
@@ -2195,7 +2201,8 @@ process_routing_mandatory(_Mandatory = true,
     ok;
 process_routing_mandatory(_Mandatory = false,
                           _RoutedToQs = [],
-                          #basic_message{exchange_name = ExchangeName}, State) ->
+                          Message, State) ->
+    ExchangeName = mc:get_annotation(exchange, Message),
     rabbit_global_counters:messages_unroutable_dropped(amqp091, 1),
     ?INCR_STATS(exchange_stats, ExchangeName, 1, drop_unroutable, State),
     ok;
@@ -2695,18 +2702,19 @@ handle_deliver(CTag, Ack, Msg, State) ->
     handle_deliver0(CTag, Ack, Msg, State).
 
 handle_deliver0(ConsumerTag, AckRequired,
-                Msg = {QName, QPid, _MsgId, Redelivered,
-                      #basic_message{exchange_name = ExchangeName,
-                                     routing_keys  = [RoutingKey | _CcRoutes],
-                                     content       = Content}},
+                {QName, QPid, _MsgId, Redelivered, MsgCont0} = Msg,
                State = #ch{cfg = #conf{writer_pid = WriterPid,
                                        writer_gc_threshold = GCThreshold},
                            next_tag   = DeliveryTag,
                            queue_states = Qs}) ->
+    [RoutingKey | _] = mc:get_annotation(routing_keys, MsgCont0),
+    ExchangeNameBin = mc:get_annotation(exchange, MsgCont0),
+    MsgCont = mc:convert(rabbit_mc_amqp_legacy, MsgCont0),
+    Content = mc:protocol_state(MsgCont),
     Deliver = #'basic.deliver'{consumer_tag = ConsumerTag,
                                delivery_tag = DeliveryTag,
                                redelivered  = Redelivered,
-                               exchange     = ExchangeName#resource.name,
+                               exchange     = ExchangeNameBin,
                                routing_key  = RoutingKey},
     {ok, QueueType} = rabbit_queue_type:module(QName, Qs),
     case QueueType of
@@ -2723,20 +2731,21 @@ handle_deliver0(ConsumerTag, AckRequired,
     record_sent(deliver, QueueType, ConsumerTag, AckRequired, Msg, State).
 
 handle_basic_get(WriterPid, DeliveryTag, NoAck, MessageCount,
-                 Msg = {_QName, _QPid, _MsgId, Redelivered,
-                        #basic_message{exchange_name = ExchangeName,
-                                       routing_keys  = [RoutingKey | _CcRoutes],
-                                       content       = Content}},
+                 Msg0 = {_QName, _QPid, _MsgId, Redelivered, MsgCont0},
                  QueueType, State) ->
+    [RoutingKey | _] = mc:get_annotation(routing_keys, MsgCont0),
+    ExchangeName = mc:get_annotation(exchange, MsgCont0),
+    MsgCont = mc:convert(rabbit_mc_amqp_legacy, MsgCont0),
+    Content = mc:protocol_state(MsgCont),
     ok = rabbit_writer:send_command(
            WriterPid,
            #'basic.get_ok'{delivery_tag  = DeliveryTag,
                            redelivered   = Redelivered,
-                           exchange      = ExchangeName#resource.name,
+                           exchange      = ExchangeName,
                            routing_key   = RoutingKey,
                            message_count = MessageCount},
            Content),
-    {noreply, record_sent(get, QueueType, DeliveryTag, not(NoAck), Msg, State)}.
+    {noreply, record_sent(get, QueueType, DeliveryTag, not(NoAck), Msg0, State)}.
 
 init_tick_timer(State = #ch{tick_timer = undefined}) ->
     {ok, Interval} = application:get_env(rabbit, channel_tick_interval),

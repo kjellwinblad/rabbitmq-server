@@ -71,7 +71,6 @@
 
 -include_lib("stdlib/include/qlc.hrl").
 -include_lib("rabbit_common/include/rabbit.hrl").
--include_lib("rabbit_common/include/rabbit_framing.hrl").
 -include("amqqueue.hrl").
 
 -type msg_id() :: non_neg_integer().
@@ -872,10 +871,10 @@ deliver0(QName, Correlation, Msg, QState0) ->
     rabbit_fifo_client:enqueue(QName, Correlation,
                                Msg, QState0).
 
-deliver(QSs, #basic_message{content = Content0} = Msg0, Options) ->
+deliver(QSs, Msg, Options) ->
     Correlation = maps:get(correlation, Options, undefined),
-    Content = prepare_content(Content0),
-    Msg = Msg0#basic_message{content = Content},
+    % Content = prepare_content(Content0),
+    % Msg = Msg0#basic_message{content = Content},
     lists:foldl(
       fun({Q, stateless}, {Qs, Actions}) ->
               QRef = amqqueue:get_pid(Q),
@@ -1533,9 +1532,12 @@ peek(Pos, Q) when ?is_amqqueue(Q) andalso ?amqqueue_is_quorum(Q) ->
                         #{delivery_count := C} -> C;
                        _ -> 0
                     end,
-            Msg = rabbit_basic:add_header(<<"x-delivery-count">>, long,
-                                          Count, Msg0),
-            {ok, rabbit_basic:peek_fmt_message(Msg)};
+            Msg = mc:set_annotation(<<"x-delivery-count">>, Count, Msg0),
+            XName = mc:get_annotation(exchange, Msg),
+            RoutingKeys = mc:get_annotation(routing_keys, Msg),
+            AmqpLegacyMsg = mc:convert(rabbit_mc_amqp_legacy, Msg),
+            Content = mc:protocol_state(AmqpLegacyMsg),
+            {ok, rabbit_basic:peek_fmt_message(XName, RoutingKeys, Content)};
         {error, Err} ->
             {error, Err};
         Err ->
@@ -1670,18 +1672,18 @@ notify_decorators(QName, F, A) ->
     end.
 
 %% remove any data that a quorum queue doesn't need
-prepare_content(#content{properties = none} = Content) ->
-    Content;
-prepare_content(#content{protocol = none} = Content) ->
-    Content;
-prepare_content(#content{properties = #'P_basic'{expiration = undefined} = Props,
-                         protocol = Proto} = Content) ->
-    Content#content{properties = none,
-                    properties_bin = Proto:encode_properties(Props)};
-prepare_content(Content) ->
-    %% expiration is set. Therefore, leave properties decoded so that
-    %% rabbit_fifo can directly parse it without having to decode again.
-    Content.
+% prepare_content(#content{properties = none} = Content) ->
+%     Content;
+% prepare_content(#content{protocol = none} = Content) ->
+%     Content;
+% prepare_content(#content{properties = #'P_basic'{expiration = undefined} = Props,
+%                          protocol = Proto} = Content) ->
+%     Content#content{properties = none,
+%                     properties_bin = Proto:encode_properties(Props)};
+% prepare_content(Content) ->
+%     %% expiration is set. Therefore, leave properties decoded so that
+%     %% rabbit_fifo can directly parse it without having to decode again.
+%     Content.
 
 ets_lookup_element(Tbl, Key, Pos, Default) ->
     try ets:lookup_element(Tbl, Key, Pos) of

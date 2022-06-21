@@ -31,9 +31,11 @@ description() ->
 
 serialise_events() -> false.
 
-route(#exchange{name = Name, type = Type},
-      #basic_message{routing_keys = Routes}) ->
-    case {Type, rabbit_feature_flags:is_enabled(direct_exchange_routing_v2, non_blocking)} of
+route(#exchange{name = Name, type = Type}, Msg) ->
+      % #basic_message{routing_keys = Routes}) ->
+    Routes = mc:get_annotation(routing_keys, Msg),
+    case {Type, rabbit_feature_flags:is_enabled(direct_exchange_routing_v2,
+                                                non_blocking)} of
         {direct, true} ->
             route_v2(Name, Routes);
         _ ->

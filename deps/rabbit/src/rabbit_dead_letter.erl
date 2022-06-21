@@ -21,17 +21,34 @@
 
 %%----------------------------------------------------------------------------
 
--spec publish(rabbit_types:message(), reason(), rabbit_types:exchange(),
-              'undefined' | binary(), rabbit_amqqueue:name()) -> 'ok'.
-publish(Msg, Reason, X, RK, SourceQName) ->
-    DLMsg = make_msg(Msg, Reason, X#exchange.name, RK, SourceQName),
-    Delivery = rabbit_basic:delivery(false, false, DLMsg, undefined),
-    {QNames, Cycles} = detect_cycles(Reason, DLMsg,
-                                     rabbit_exchange:route(X, Delivery)),
+-spec publish(mc:state(), reason(), rabbit_types:exchange(),
+              undefined | binary(), rabbit_amqqueue:name()) ->
+    ok.
+% publish(Msg, Reason, DLX, undefined, QName) ->
+%     %% strip any additional routing keys (from CC and BCC headers for example)
+%     [RK | _] = mc:get_annotation(routing_keys, Msg),
+%     publish(Msg, Reason, DLX, RK, QName);
+publish(Msg00, Reason, #exchange{name = XName} = DLX, RK,
+        #resource{name = SourceQName}) ->
+
+    DLRKeys = case RK of
+                  undefined ->
+                      mc:get_annotation(routing_keys, Msg00);
+                  _ ->
+                      [RK]
+              end,
+
+    Msg0 = mc:record_death(Reason, SourceQName, Msg00),
+    Msg1 = mc:set_ttl(undefined, Msg0),
+    Msg2 = mc:set_annotation(routing_keys, DLRKeys, Msg1),
+    DLMsg = mc:set_annotation(exchange, XName#resource.name, Msg2),
+    Routed = rabbit_exchange:route(DLX, DLMsg),
+    {QNames, Cycles} = detect_cycles(Reason, DLMsg, Routed),
     lists:foreach(fun log_cycle_once/1, Cycles),
     Qs0 = rabbit_amqqueue:lookup(QNames),
     Qs = rabbit_amqqueue:prepend_extra_bcc(Qs0),
-    _ = rabbit_queue_type:deliver(Qs, Delivery, stateless),
+    rabbit_log:info("~s PUBLISH ~w ~p ~p ~p", [?MODULE, Reason, DLX, RK, QNames]),
+    _ = rabbit_queue_type:deliver(Qs, DLMsg, #{}, stateless),
     ok.
 
 make_msg(Msg = #basic_message{content       = Content,
@@ -196,62 +213,78 @@ per_msg_ttl_header(_) ->
 
 detect_cycles(rejected, _Msg, Queues) ->
     {Queues, []};
+detect_cycles(_Reason, Msg, Queues) ->
+    {Cycling, NotCycling} =
+        lists:partition(fun (#resource{name = Queue}) ->
+                                mc:is_death_cycle(Queue, Msg);
+                            (_) ->
+                                false
+                        end, Queues),
+    DeathQueues = mc:death_queue_names(Msg),
+    CycleKeys = [[Q | DeathQueues] || #resource{name = Q} <- Cycling],
+    {NotCycling, CycleKeys}.
 
-detect_cycles(_Reason, #basic_message{content = Content}, Queues) ->
-    #content{properties = #'P_basic'{headers = Headers}} =
-        rabbit_binary_parser:ensure_content_decoded(Content),
-    NoCycles = {Queues, []},
-    case Headers of
-        undefined ->
-            NoCycles;
-        _ ->
-            case rabbit_misc:table_lookup(Headers, <<"x-death">>) of
-                {array, Deaths} ->
-                    {Cycling, NotCycling} =
-                        lists:partition(fun (#resource{name = Queue}) ->
-                                                is_cycle(Queue, Deaths)
-                                        end, Queues),
-                    OldQueues = [rabbit_misc:table_lookup(D, <<"queue">>) ||
-                                    {table, D} <- Deaths],
-                    OldQueues1 = [QName || {longstr, QName} <- OldQueues],
-                    {NotCycling, [[QName | OldQueues1] ||
-                                     #resource{name = QName} <- Cycling]};
-                _ ->
-                    NoCycles
-            end
-    end.
+% detect_cycles(rejected, _Msg, Queues) ->
+%     {Queues, []};
+% detect_cycles(_Reason, #basic_message{content = Content}, Queues) ->
+%     #content{properties = #'P_basic'{headers = Headers}} =
+%         rabbit_binary_parser:ensure_content_decoded(Content),
+%     NoCycles = {Queues, []},
+%     case Headers of
+%         undefined ->
+%             NoCycles;
+%         _ ->
+%             case rabbit_misc:table_lookup(Headers, <<"x-death">>) of
+%                 {array, Deaths} ->
+%                     {Cycling, NotCycling} =
+%                         lists:partition(fun (#resource{name = Queue}) ->
+%                                                 is_cycle(Queue, Deaths)
+%                                         end, Queues),
+%                     OldQueues = [rabbit_misc:table_lookup(D, <<"queue">>) ||
+%                                     {table, D} <- Deaths],
+%                     OldQueues1 = [QName || {longstr, QName} <- OldQueues],
+%                     {NotCycling, [[QName | OldQueues1] ||
+%                                      #resource{name = QName} <- Cycling]};
+%                 _ ->
+%                     NoCycles
+%             end
+%     end.
 
-is_cycle(Queue, Deaths) ->
-    {Cycle, Rest} =
-        lists:splitwith(
-          fun ({table, D}) ->
-                  {longstr, Queue} =/= rabbit_misc:table_lookup(D, <<"queue">>);
-              (_) ->
-                  true
-          end, Deaths),
-    %% Is there a cycle, and if so, is it "fully automatic", i.e. with
-    %% no reject in it?
-    case Rest of
-        []    -> false;
-        [H|_] -> lists:all(
-                   fun ({table, D}) ->
-                           {longstr, <<"rejected">>} =/=
-                               rabbit_misc:table_lookup(D, <<"reason">>);
-                       (_) ->
-                           %% There was something we didn't expect, therefore
-                           %% a client must have put it there, therefore the
-                           %% cycle was not "fully automatic".
-                           false
-                   end, Cycle ++ [H])
-    end.
+
+% is_cycle(Queue, Deaths) ->
+%     {Cycle, Rest} =
+%         lists:splitwith(
+%           fun ({table, D}) ->
+%                   {longstr, Queue} =/= rabbit_misc:table_lookup(D, <<"queue">>);
+%               (_) ->
+%                   true
+%           end, Deaths),
+%     %% Is there a cycle, and if so, is it "fully automatic", i.e. with
+%     %% no reject in it?
+%     case Rest of
+%         []    -> false;
+%         [H|_] -> lists:all(
+%                    fun ({table, D}) ->
+%                            {longstr, <<"rejected">>} =/=
+%                                rabbit_misc:table_lookup(D, <<"reason">>);
+%                        (_) ->
+%                            %% There was something we didn't expect, therefore
+%                            %% a client must have put it there, therefore the
+%                            %% cycle was not "fully automatic".
+%                            false
+%                    end, Cycle ++ [H])
+%     end.
 
 log_cycle_once(Queues) ->
-    Key = {queue_cycle, Queues},
+    %% using a hash won't eliminate this as a potential memory leak but it will
+    %% reduce the potential amount of memory used whilst probably being
+    %% "good enough"
+    Key = {queue_cycle, erlang:phash2(Queues)},
     case get(Key) of
-        true      -> ok;
-        undefined -> rabbit_log:warning(
-                       "Message dropped. Dead-letter queues cycle detected" ++
-                           ": ~tp~nThis cycle will NOT be reported again.",
-                       [Queues]),
-                     put(Key, true)
+        true -> ok;
+        undefined ->
+            rabbit_log:warning("Message dropped. Dead-letter queues cycle detected"
+                               ": ~tp~nThis cycle will NOT be reported again.",
+                               [Queues]),
+            put(Key, true)
     end.

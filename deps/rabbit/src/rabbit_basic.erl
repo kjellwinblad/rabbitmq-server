@@ -11,12 +11,15 @@
 
 -export([publish/4, publish/5, publish/1,
          message/3, message_no_id/3, message/4, properties/1, prepend_table_header/3,
-         extract_headers/1, extract_timestamp/1, map_headers/2, delivery/4,
+         extract_headers/1, extract_timestamp/1, map_headers/2,
+         delivery/4,
+         delivery/5,
          header_routes/1, parse_expiration/1, header/2, header/3]).
 -export([build_content/2, from_content/1, msg_size/1,
          maybe_gc_large_msg/1, maybe_gc_large_msg/2]).
--export([add_header/4,
-         peek_fmt_message/1]).
+-export([strip_bcc_header/1,
+         add_header/4,
+         peek_fmt_message/3]).
 
 %%----------------------------------------------------------------------------
 
@@ -69,16 +72,19 @@ publish(Delivery = #delivery{
 
 publish(X, Delivery) ->
     Qs = rabbit_amqqueue:lookup(rabbit_exchange:route(X, Delivery)),
-    _ = rabbit_queue_type:deliver(Qs, Delivery, stateless),
+    _ = rabbit_queue_type:deliver(Qs, Delivery, #{}, stateless),
     ok.
 
 -spec delivery
-        (boolean(), boolean(), rabbit_types:message(), undefined | integer()) ->
+        (boolean(), boolean(), mc:state(), undefined | integer()) ->
             rabbit_types:delivery().
 
 delivery(Mandatory, Confirm, Message, MsgSeqNo) ->
+    delivery(Mandatory, Confirm, Message, MsgSeqNo, noflow).
+
+delivery(Mandatory, Confirm, Message, MsgSeqNo, Flow) ->
     #delivery{mandatory = Mandatory, confirm = Confirm, sender = self(),
-              message = Message, msg_seq_no = MsgSeqNo, flow = noflow}.
+              message = Message, msg_seq_no = MsgSeqNo, flow = Flow}.
 
 -spec build_content
         (rabbit_framing:amqp_property_record(), binary() | [binary()]) ->
@@ -110,6 +116,9 @@ from_content(Content) ->
     {ClassId, _MethodId} =
         rabbit_framing_amqp_0_9_1:method_id('basic.publish'),
     {Props, list_to_binary(lists:reverse(FragmentsRev))}.
+
+strip_bcc_header(#content{} = Content) ->
+    strip_header(Content, ?DELETED_HEADER).
 
 %% This breaks the spec rule forbidding message modification
 strip_header(#content{properties = #'P_basic'{headers = undefined}}
@@ -288,6 +297,8 @@ header_routes(HeadersTable) ->
 parse_expiration(#'P_basic'{expiration = undefined}) ->
     {ok, undefined};
 parse_expiration(#'P_basic'{expiration = Expiration}) ->
+    parse_expiration(Expiration);
+parse_expiration(Expiration) when is_binary(Expiration) ->
     case string:to_integer(binary_to_list(Expiration)) of
         {error, no_integer} = E ->
             E;
@@ -320,11 +331,8 @@ add_header(Name, Type, Value, #basic_message{content = Content0} = Msg) ->
                 end, Content0),
     Msg#basic_message{content = Content}.
 
-peek_fmt_message(#basic_message{exchange_name = Ex,
-                                routing_keys = RKeys,
-                                content =
-                                #content{payload_fragments_rev = Payl0,
-                                         properties = Props}}) ->
+peek_fmt_message(Ex, RKeys, #content{payload_fragments_rev = Payl0,
+                                     properties = Props}) ->
     Fields = [atom_to_binary(F, utf8) || F <- record_info(fields, 'P_basic')],
     T = lists:zip(Fields, tl(tuple_to_list(Props))),
     lists:foldl(
@@ -342,7 +350,7 @@ peek_fmt_message(#basic_message{exchange_name = Ex,
       end, [], [{<<"payload (max 64 bytes)">>,
                  %% restric payload to 64 bytes
                  binary_prefix_64(iolist_to_binary(lists:reverse(Payl0)), 64)},
-                {<<"exchange">>, Ex#resource.name},
+                {<<"exchange">>, Ex},
                 {<<"routing_keys">>, RKeys} | T]).
 
 header_key(A) ->

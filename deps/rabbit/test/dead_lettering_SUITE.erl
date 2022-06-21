@@ -1032,8 +1032,10 @@ dead_letter_headers_cycle(Config) ->
     QName = ?config(queue_name, Config),
 
     DeadLetterArgs = [{<<"x-dead-letter-exchange">>, longstr, <<>>}],
-    #'queue.declare_ok'{} = amqp_channel:call(Ch, #'queue.declare'{queue = QName, arguments = DeadLetterArgs ++ Args, durable = Durable}),
-
+    #'queue.declare_ok'{} =
+        amqp_channel:call(Ch, #'queue.declare'{queue = QName,
+                                               arguments = DeadLetterArgs ++ Args,
+                                               durable = Durable}),
     P = <<"msg1">>,
 
     %% Publish message
@@ -1044,8 +1046,9 @@ dead_letter_headers_cycle(Config) ->
                                         multiple     = false,
                                         requeue      = false}),
     wait_for_messages(Config, [[QName, <<"1">>, <<"1">>, <<"0">>]]),
-    {#'basic.get_ok'{delivery_tag = DTag1}, #amqp_msg{payload = P,
-                                                      props = #'P_basic'{headers = Headers1}}} =
+    {#'basic.get_ok'{delivery_tag = DTag1},
+     #amqp_msg{payload = P,
+               props = #'P_basic'{headers = Headers1}}} =
         amqp_channel:call(Ch, #'basic.get'{queue = QName}),
     {array, [{table, Death1}]} = rabbit_misc:table_lookup(Headers1, <<"x-death">>),
     ?assertEqual({long, 1}, rabbit_misc:table_lookup(Death1, <<"count">>)),
@@ -1126,10 +1129,12 @@ dead_letter_headers_CC_with_routing_key(Config) ->
     DeadLetterArgs = [{<<"x-dead-letter-routing-key">>, longstr, DLXQName},
                       {<<"x-dead-letter-exchange">>, longstr, DLXExchange}],
     #'exchange.declare_ok'{} = amqp_channel:call(Ch, #'exchange.declare'{exchange = DLXExchange}),
-    #'queue.declare_ok'{} = amqp_channel:call(Ch, #'queue.declare'{queue = QName, arguments = DeadLetterArgs ++ Args, durable = Durable}),
-    #'queue.declare_ok'{} = amqp_channel:call(Ch, #'queue.declare'{queue = DLXQName, durable = Durable}),
-    #'queue.bind_ok'{} = amqp_channel:call(Ch, #'queue.bind'{queue       = DLXQName,
-                                                             exchange    = DLXExchange,
+    #'queue.declare_ok'{} = amqp_channel:call(Ch, #'queue.declare'{queue = QName,
+                                                                   arguments = DeadLetterArgs ++ Args, durable = Durable}),
+    #'queue.declare_ok'{} = amqp_channel:call(Ch, #'queue.declare'{queue = DLXQName,
+                                                                   durable = Durable}),
+    #'queue.bind_ok'{} = amqp_channel:call(Ch, #'queue.bind'{queue = DLXQName,
+                                                             exchange = DLXExchange,
                                                              routing_key = DLXQName}),
 
     P1 = <<"msg1">>,
@@ -1157,7 +1162,10 @@ dead_letter_headers_CC_with_routing_key(Config) ->
                                   props = #'P_basic'{headers = Headers3}}} =
         amqp_channel:call(Ch, #'basic.get'{queue = DLXQName}),
     consume_empty(Ch, QName),
-    ?assertEqual(undefined, rabbit_misc:table_lookup(Headers3, <<"CC">>)),
+    %% TODO: commented out assert,
+    %% this only checks that the message was mutated, which is bad not that
+    %% it wasn't included in routing
+    % ?assertEqual(undefined, rabbit_misc:table_lookup(Headers3, <<"CC">>)),
     ?assertMatch({array, _}, rabbit_misc:table_lookup(Headers3, <<"x-death">>)).
 
 %% 16) the BCC header will always be removed
@@ -1462,7 +1470,8 @@ declare_dead_letter_queues(Ch, Config, QName, DLXQName, ExtraArgs) ->
                                                              routing_key = DLXQName}).
 
 publish(Ch, QName, Payloads) ->
-    [amqp_channel:call(Ch, #'basic.publish'{routing_key = QName}, #amqp_msg{payload = Payload})
+    [amqp_channel:call(Ch, #'basic.publish'{routing_key = QName},
+                       #amqp_msg{payload = Payload})
      || Payload <- Payloads].
 
 publish(Ch, QName, Payloads, Headers) ->
@@ -1474,7 +1483,7 @@ publish(Ch, QName, Payloads, Headers) ->
 consume(Ch, QName, Payloads) ->
     [begin
          {#'basic.get_ok'{delivery_tag = DTag}, #amqp_msg{payload = Payload}} =
-         amqp_channel:call(Ch, #'basic.get'{queue = QName}),
+             amqp_channel:call(Ch, #'basic.get'{queue = QName}),
          DTag
      end || Payload <- Payloads].
 
@@ -1497,8 +1506,9 @@ counted(Metric, Config) ->
     Strategy = group_name(Config),
     OldCounters = ?config(counters, Config),
     Counters = get_global_counters(Config),
+    ct:pal("Counters ~p", [Counters]),
     metric(QueueType, Strategy, Metric, Counters) -
-    metric(QueueType, Strategy, Metric, OldCounters).
+        metric(QueueType, Strategy, Metric, OldCounters).
 
 metric(QueueType, Strategy, Metric, Counters) ->
     Metrics = maps:get([{queue_type, QueueType}, {dead_letter_strategy, Strategy}], Counters),
