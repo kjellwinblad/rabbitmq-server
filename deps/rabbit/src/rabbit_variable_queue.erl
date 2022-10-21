@@ -614,8 +614,8 @@ fetch(AckRequired, State) ->
         {{value, MsgStatus}, State1} ->
             %% it is possible that the message wasn't read from disk
             %% at this point, so read it in.
-            {Msg, State2} = read_msg(MsgStatus, State1),
-            {AckTag, State3} = remove(AckRequired, MsgStatus, State2),
+            {Msg = #basic_message{id = MsgId}, State2} = read_msg(MsgStatus, State1),
+            {AckTag, State3} = remove(AckRequired, MsgStatus#msg_status{msg_id = MsgId}, State2),
             {{Msg, MsgStatus#msg_status.is_delivered, AckTag}, a(State3)}
     end.
 
@@ -624,8 +624,17 @@ drop(AckRequired, State) ->
         {empty, State1} ->
             {empty, a(State1)};
         {{value, MsgStatus}, State1} ->
-            {AckTag, State2} = remove(AckRequired, MsgStatus, State1),
-            {{MsgStatus#msg_status.msg_id, AckTag}, a(State2)}
+            %% This is necessary for CMQs so that slaves can drop the message.
+            %% @todo Remove this once CMQs are gone.
+            {MsgStatus1, State3} = case {AckRequired, MsgStatus} of
+                {true, #msg_status{msg_id = undefined}} ->
+                    {#basic_message{id = MsgId}, State2} = read_msg(MsgStatus, State1),
+                    {MsgStatus#msg_status{msg_id = MsgId}, State2};
+                _ ->
+                    {MsgStatus, State1}
+            end,
+            {AckTag, State4} = remove(AckRequired, MsgStatus1, State3),
+            {{MsgStatus1#msg_status.msg_id, AckTag}, a(State4)}
     end.
 
 %% Duplicated from rabbit_backing_queue
@@ -1824,9 +1833,10 @@ process_queue_entries1(
   #msg_status { seq_id = SeqId } = MsgStatus,
   Fun,
   {NextDeliverSeqId, FetchAcc, State}) ->
-    {Msg, State1} = read_msg(MsgStatus, State),
+    {Msg = #basic_message{id = MsgId}, State1} = read_msg(MsgStatus, State),
     State2 = record_pending_ack(
                MsgStatus #msg_status {
+                 msg_id = MsgId,
                  is_delivered = true }, State1),
     {next_deliver_seq_id(SeqId, NextDeliverSeqId),
      Fun(Msg, SeqId, FetchAcc),
