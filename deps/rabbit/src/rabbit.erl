@@ -212,11 +212,13 @@
 -rabbit_boot_step({connection_tracking,
                    [{description, "connection tracking infrastructure"},
                     {mfa,         {rabbit_connection_tracking, boot, []}},
+                    {requires,    database},
                     {enables,     routing_ready}]}).
 
 -rabbit_boot_step({channel_tracking,
                    [{description, "channel tracking infrastructure"},
                     {mfa,         {rabbit_channel_tracking, boot, []}},
+                    {requires,    database},
                     {enables,     routing_ready}]}).
 
 -rabbit_boot_step({background_gc,
@@ -368,6 +370,10 @@ run_prelaunch_second_phase() ->
     ok = mnesia:start(),
 
     ok = rabbit_ra_systems:setup(Context),
+
+    %% Khepri requires the "coordination" Ra system to be started by the
+    %% previous call, but will ensure it runs anyway.
+    ok = rabbit_khepri:setup(Context),
 
     ?LOG_DEBUG(""),
     ?LOG_DEBUG("== Prelaunch DONE =="),
