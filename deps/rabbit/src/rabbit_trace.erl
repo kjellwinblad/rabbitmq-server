@@ -47,12 +47,12 @@ enabled(none) ->
 enabled(#exchange{}) ->
     true.
 
--spec tap_in(rabbit_types:basic_message(), [rabbit_amqqueue:name()],
+-spec tap_in(mc:state(), [rabbit_amqqueue:name()],
              binary(), rabbit_types:username(), state()) -> 'ok'.
 tap_in(Msg, QNames, ConnName, Username, State) ->
     tap_in(Msg, QNames, ConnName, ?CONNECTION_GLOBAL_CHANNEL_NUM, Username, State).
 
--spec tap_in(rabbit_types:basic_message(), [rabbit_amqqueue:name()],
+-spec tap_in(mc:state(), [rabbit_amqqueue:name()],
              binary(), rabbit_channel:channel_number(),
              rabbit_types:username(), state()) -> 'ok'.
 tap_in(_Msg, _QNames, _ConnName, _ChannelNum, _Username, none) -> ok;
@@ -72,7 +72,7 @@ tap_in(Msg, QNames, ConnName, ChannelNum, Username, TraceX) ->
 tap_out(Msg, ConnName, Username, State) ->
     tap_out(Msg, ConnName, ?CONNECTION_GLOBAL_CHANNEL_NUM, Username, State).
 
--spec tap_out(rabbit_amqqueue:qmsg(), binary(),
+-spec tap_out(mc:state(), binary(),
               rabbit_channel:channel_number(),
               rabbit_types:username(), state()) -> 'ok'.
 tap_out(_Msg, _ConnName, _ChannelNum, _Username, none) -> ok;
@@ -135,36 +135,30 @@ vhosts_with_tracing_enabled() ->
 
 %%----------------------------------------------------------------------------
 
-trace(#exchange{name = Name}, #basic_message{exchange_name = Name},
-      _RKPrefix, _RKSuffix, _Extra) ->
-    ok;
-trace(X, Msg0,
-      RKPrefix, RKSuffix, Extra) ->
+trace(X, Msg0, RKPrefix, RKSuffix, Extra) ->
     XName = mc:get_annotation(exchange, Msg0),
-    RoutingKeys = mc:get_annotation(routing_keys, Msg0),
-    %% for now convert into amqp legacy
-    Msg = mc:convert(rabbit_mc_amqp_legacy, Msg0),
-    %% check exchange name in case it is same as target
-    #content{properties = Props} = Content0 = mc:protocol_state(Msg),
+    case X of
+        #exchange{name = XName} ->
+            ok;
+        _ ->
+            RoutingKeys = mc:get_annotation(routing_keys, Msg0),
+            %% for now convert into amqp legacy
+            Msg = mc:convert(rabbit_mc_amqp_legacy, Msg0),
+            %% check exchange name in case it is same as target
+            #content{properties = Props} = Content0 = mc:protocol_state(Msg),
 
-    Key = <<RKPrefix/binary, ".", RKSuffix/binary>>,
-    Content = Content0#content{properties =
-                    #'P_basic'{headers = msg_to_table(XName, RoutingKeys, Props )
-                               ++ Extra}},
+            Key = <<RKPrefix/binary, ".", RKSuffix/binary>>,
+            Content = Content0#content{properties =
+                                       #'P_basic'{headers = msg_to_table(XName, RoutingKeys, Props )
+                                                  ++ Extra}},
 
-    TraceMsg = mc:init(rabbit_mc_amqp_legacy, Content, #{exchange => ?XNAME,
-                                                         routing_keys => [Key]}),
-    ok = rabbit_queue_type:publish_at_most_once(X, TraceMsg),
-                % X, <<RKPrefix/binary, ".", RKSuffix/binary>>,
-                % #'P_basic'{headers = msg_to_table(Msg) ++ Extra}, PFR),
-    ok.
+            TraceMsg = mc:init(rabbit_mc_amqp_legacy, Content, #{exchange => ?XNAME,
+                                                                 routing_keys => [Key]}),
+            ok = rabbit_queue_type:publish_at_most_once(X, TraceMsg),
+            ok
+    end.
 
-% msg_to_table(#basic_message{exchange_name = #resource{name = XName},
-%                             routing_keys  = RoutingKeys,
-%                             content       = Content}) ->
 msg_to_table(XName, RoutingKeys, Props) ->
-    % #content{properties = Props} =
-    %     rabbit_binary_parser:ensure_content_decoded(Content),
     {PropsTable, _Ix} =
         lists:foldl(fun (K, {L, Ix}) ->
                             V = element(Ix, Props),
