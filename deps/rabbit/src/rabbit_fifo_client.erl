@@ -30,7 +30,8 @@
          pending_size/1,
          stat/1,
          stat/2,
-         query_single_active_consumer/1
+         query_single_active_consumer/1,
+         cluster_name/1
          ]).
 
 -include_lib("rabbit_common/include/rabbit.hrl").

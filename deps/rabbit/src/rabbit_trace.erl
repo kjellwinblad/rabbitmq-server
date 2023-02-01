@@ -72,7 +72,7 @@ tap_in(Msg, QNames, ConnName, ChannelNum, Username, TraceX) ->
 tap_out(Msg, ConnName, Username, State) ->
     tap_out(Msg, ConnName, ?CONNECTION_GLOBAL_CHANNEL_NUM, Username, State).
 
--spec tap_out(mc:state(), binary(),
+-spec tap_out(rabbit_amqqueue:qmsg(), binary(),
               rabbit_channel:channel_number(),
               rabbit_types:username(), state()) -> 'ok'.
 tap_out(_Msg, _ConnName, _ChannelNum, _Username, none) -> ok;

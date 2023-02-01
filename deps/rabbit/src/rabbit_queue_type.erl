@@ -114,6 +114,7 @@
 
 -export_type([state/0,
               consume_spec/0,
+              delivery_options/0,
               action/0,
               actions/0,
               settle_op/0]).
@@ -183,7 +184,7 @@
     {protocol_error, Type :: atom(), Reason :: string(), Args :: term()}.
 
 -callback deliver([{amqqueue:amqqueue(), queue_state()}],
-                  Delivery :: mc:state(),
+                  Message :: mc:state(),
                   Options :: delivery_options()) ->
     {[{amqqueue:amqqueue(), queue_state()}], actions()}.
 

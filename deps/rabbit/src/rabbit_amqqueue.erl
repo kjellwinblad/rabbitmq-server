@@ -94,7 +94,7 @@
 -type qlen() :: rabbit_types:ok(non_neg_integer()).
 -type qfun(A) :: fun ((amqqueue:amqqueue()) -> A | no_return()).
 -type qmsg() :: {name(), pid() | {atom(), pid()}, msg_id(),
-                 boolean(), rabbit_types:message()}.
+                 boolean(), mc:state()}.
 -type msg_id() :: non_neg_integer().
 -type ok_or_errors() ::
         'ok' | {'error', [{'error' | 'exit' | 'throw', any()}]}.

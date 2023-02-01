@@ -873,8 +873,6 @@ deliver0(QName, Correlation, Msg, QState0) ->
 
 deliver(QSs, Msg, Options) ->
     Correlation = maps:get(correlation, Options, undefined),
-    % Content = prepare_content(Content0),
-    % Msg = Msg0#basic_message{content = Content},
     lists:foldl(
       fun({Q, stateless}, {Qs, Actions}) ->
               QRef = amqqueue:get_pid(Q),
@@ -884,10 +882,10 @@ deliver(QSs, Msg, Options) ->
               QName = amqqueue:get_name(Q),
               case deliver0(QName, Correlation, Msg, S0) of
                   {reject_publish, S} ->
-                      QName = rabbit_fifo_client:cluster_name(S),
-                      {[{Q, S} | Qs], [{rejected, QName, [Correlation]} | Actions]};
-                  {_, S} ->
-                      {[{Q, S} | Qs], Actions}
+                      {[{Q, S} | Qs],
+                       [{rejected, QName, [Correlation]} | Actions]};
+                  {ok, S, As} ->
+                      {[{Q, S} | Qs], As ++ Actions}
               end
       end, {[], []}, QSs).
 

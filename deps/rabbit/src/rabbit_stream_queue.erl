@@ -374,9 +374,9 @@ deliver(QSs, Message, Options) ->
               LeaderPid = amqqueue:get_pid(Q),
               ok = osiris:write(LeaderPid, undefined, 0, msg_to_iodata(Message)),
               {Qs, Actions};
-         ({Q, S0}, {Qs, Actions}) ->
-              S = deliver0(maps:get(correlation, Options, undefined),
-                           Message, S0),
+         ({Q, S0}, {Qs, Actions0}) ->
+              {S, Actions} = deliver0(maps:get(correlation, Options, undefined),
+                                      Message, S0, Actions0),
               {[{Q, S} | Qs], Actions}
       end, {[], []}, QSs).
 
@@ -387,7 +387,8 @@ deliver0(MsgId, Msg,
                         next_seq = Seq,
                         correlation = Correlation0,
                         soft_limit = SftLmt,
-                        slow = Slow0} = State) ->
+                        slow = Slow0} = State,
+        Actions0) ->
     ok = osiris:write(LeaderPid, WriterId, Seq, msg_to_iodata(Msg)),
     Correlation = case MsgId of
                       undefined ->
@@ -397,9 +398,9 @@ deliver0(MsgId, Msg,
                   end,
     {Slow, Actions} = case maps:size(Correlation) >= SftLmt of
                           true when not Slow0 ->
-                              {true, [{block, Name}]};
+                              {true, [{block, Name} | Actions0]};
                           Bool ->
-                              {Bool, []}
+                              {Bool, Actions0}
                       end,
     {State#stream_client{next_seq = Seq + 1,
                          correlation = Correlation,
@@ -484,8 +485,8 @@ recover(_VHost, Queues) ->
       end, {[], []}, Queues).
 
 settle(QName, complete, CTag, MsgIds, #stream_client{readers = Readers0,
-                                              local_pid = LocalPid,
-                                              name = Name} = State) ->
+                                                     local_pid = LocalPid,
+                                                     name = Name} = State) ->
     Credit = length(MsgIds),
     {Readers, Msgs} = case Readers0 of
                           #{CTag := #stream{credit = Credit0} = Str0} ->
