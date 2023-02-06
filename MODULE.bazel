@@ -229,6 +229,13 @@ erlang_package.git_package(
 )
 
 erlang_package.hex_package(
+    name = "khepri",
+    build_file = "@rabbitmq-server//bazel:BUILD.khepri",
+    # sha256 = "7fae3112cea737bc64d5ff51c1b79a7f30f13ed3d11c565d2a6966ea5aa40473",
+    version = "0.6.0",
+)
+
+erlang_package.hex_package(
     name = "thoas",
     build_file = "@rabbitmq-server//bazel:BUILD.thoas",
     sha256 = "fc763185b932ecb32a554fb735ee03c3b6b1b31366077a2427d2a97f3bd26735",
@@ -351,6 +358,7 @@ use_repo(
     "gun",
     "inet_tcp_proxy_dist",
     "jose",
+    "khepri",
     "meck",
     "observer_cli",
     "osiris",
