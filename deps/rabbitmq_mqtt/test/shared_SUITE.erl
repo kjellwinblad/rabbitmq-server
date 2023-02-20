@@ -100,15 +100,20 @@ subgroups() ->
      {cluster_size_3, [],
       [
        queue_down_qos1,
-       consuming_classic_mirrored_queue_down,
        consuming_classic_queue_down,
-       flow_classic_mirrored_queue,
        flow_quorum_queue,
        flow_stream,
        rabbit_mqtt_qos0_queue,
        cli_list_queues,
        maintenance,
        delete_create_queue,
+       publish_to_all_non_deprecated_queue_types_qos0,
+       publish_to_all_non_deprecated_queue_types_qos1
+      ]},
+     {mnesia_store, [],
+      [
+       consuming_classic_mirrored_queue_down,
+       flow_classic_mirrored_queue,
        publish_to_all_queue_types_qos0,
        publish_to_all_queue_types_qos1
       ]}
@@ -138,6 +143,11 @@ init_per_group(cluster_size_1, Config) ->
 init_per_group(cluster_size_3 = Group, Config) ->
     init_per_group0(Group,
                     rabbit_ct_helpers:set_config(Config, [{rmq_nodes_count, 3}]));
+init_per_group(mnesia_store = Group, Config) ->
+    init_per_group0(
+      Group,
+      rabbit_ct_helpers:set_config(Config, [{metadata_store, mnesia},
+                                            {rmq_nodes_count, 3}]));
 init_per_group(Group, Config)
   when Group =:= global_counters orelse
        Group =:= tests ->
@@ -365,6 +375,65 @@ publish_to_all_queue_types(Config, QoS) ->
 
     delete_queue(Ch, [CQ, CMQ, QQ, SQ]),
     ok = rabbit_ct_broker_helpers:clear_policy(Config, 0, CMQ),
+    ok = emqtt:disconnect(C),
+    ?awaitMatch([],
+                all_connection_pids(Config), 10_000, 1000).
+
+publish_to_all_non_deprecated_queue_types_qos0(Config) ->
+    publish_to_all_non_deprecated_queue_types(Config, qos0).
+
+publish_to_all_non_deprecated_queue_types_qos1(Config) ->
+    publish_to_all_non_deprecated_queue_types(Config, qos1).
+
+publish_to_all_non_deprecated_queue_types(Config, QoS) ->
+    Ch = rabbit_ct_client_helpers:open_channel(Config),
+
+    CQ = <<"classic-queue">>,
+    QQ = <<"quorum-queue">>,
+    SQ = <<"stream-queue">>,
+    Topic = <<"mytopic">>,
+
+    declare_queue(Ch, CQ, []),
+    bind(Ch, CQ, Topic),
+
+    declare_queue(Ch, QQ, [{<<"x-queue-type">>, longstr, <<"quorum">>}]),
+    bind(Ch, QQ, Topic),
+
+    declare_queue(Ch, SQ, [{<<"x-queue-type">>, longstr, <<"stream">>}]),
+    bind(Ch, SQ, Topic),
+
+    NumMsgs = 2000,
+    C = connect(?FUNCTION_NAME, Config, [{retry_interval, 2}]),
+    lists:foreach(fun(N) ->
+                          case emqtt:publish(C, Topic, integer_to_binary(N), QoS) of
+                              ok ->
+                                  ok;
+                              {ok, _} ->
+                                  ok;
+                              Other ->
+                                  ct:fail("Failed to publish: ~p", [Other])
+                          end
+                  end, lists:seq(1, NumMsgs)),
+
+    eventually(?_assert(
+                  begin
+                      L = rabbitmqctl_list(Config, 0, ["list_queues", "messages", "--no-table-headers"]),
+                      length(L) =:= 3 andalso
+                      lists:all(fun([Bin]) ->
+                                        N = binary_to_integer(Bin),
+                                        case QoS of
+                                            qos0 ->
+                                                N =:= NumMsgs;
+                                            qos1 ->
+                                                %% Allow for some duplicates when client resends
+                                                %% a message that gets acked at roughly the same time.
+                                                N >= NumMsgs andalso
+                                                N < NumMsgs * 2
+                                        end
+                                end, L)
+                  end), 2000, 10),
+
+    delete_queue(Ch, [CQ, QQ, SQ]),
     ok = emqtt:disconnect(C),
     ?awaitMatch([],
                 all_connection_pids(Config), 10_000, 1000).
@@ -1248,7 +1317,7 @@ clean_session_kill_node(Config) ->
             ?assertEqual(0, length(QsQos0)),
             ?assertEqual(2, length(QsClassic))
     end,
-    ?assertEqual(2, rpc(Config, ets, info, [rabbit_durable_queue, size])),
+    ?assertEqual(2, rpc(Config, rabbit_amqqueue, count, [])),
 
     unlink(C),
     ok = rabbit_ct_broker_helpers:kill_node(Config, 0),
@@ -1256,7 +1325,7 @@ clean_session_kill_node(Config) ->
 
     %% After terminating a clean session by a node crash, we expect any session
     %% state to be cleaned up on the server once the server comes back up.
-    ?assertEqual(0, rpc(Config, ets, info, [rabbit_durable_queue, size])).
+    ?assertEqual(0, rpc(Config, rabbit_amqqueue, count, [])).
 
 rabbit_status_connection_count(Config) ->
     _Pid = rabbit_ct_client_helpers:open_connection(Config, 0),
