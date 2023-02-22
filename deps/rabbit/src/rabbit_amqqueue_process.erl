@@ -191,7 +191,15 @@ init_it(Recover, From, State = #q{q = Q0}) ->
                   State#q{backing_queue = BQ, backing_queue_state = BQS}}
     end.
 
-init_it2(Recover, From, State = #q{q                   = Q,
+init_it2(Recover, From, State = #q{q = Q}) ->
+    %% Prevent the queue from starting if it is a classic mirrored queue and
+    %% the feature is disabled.
+    case rabbit_mirror_queue_misc:warn_if_queue_is_mirrored(Q) of
+        false -> init_it3(Recover, From, State);
+        true  -> {stop, normal, classic_mirrored_queues_disabled, State}
+    end.
+
+init_it3(Recover, From, State = #q{q                   = Q,
                                    backing_queue       = undefined,
                                    backing_queue_state = undefined}) ->
     {Barrier, TermsOrNew} = recovery_status(Recover),

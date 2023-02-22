@@ -9,6 +9,8 @@
 -behaviour(rabbit_policy_validator).
 -behaviour(rabbit_policy_merge_strategy).
 
+-include_lib("kernel/include/logger.hrl").
+
 -include("amqqueue.hrl").
 
 -export([remove_from_queue/3, on_vhost_up/1, add_mirrors/3,
@@ -26,12 +28,43 @@
 
 -export([get_replicas/1, transfer_leadership/2, migrate_leadership_to_existing_replica/2]).
 
+-export([does_policy_configure_cmq/1,
+         are_cmqs_permitted/0,
+         are_cmqs_used/1,
+         warn_if_queue_is_mirrored/1]).
+
 %% for testing only
 -export([module/1]).
 
 -include_lib("rabbit_common/include/rabbit.hrl").
 
 -define(HA_NODES_MODULE, rabbit_mirror_queue_mode_nodes).
+
+-rabbit_deprecated_feature(
+   {classic_mirrored_queues,
+    #{deprecation_phase => permitted_by_default,
+      msgs =>
+      #{when_permitted =>
+        "Classic mirrored queues are deprecated but currently permitted "
+        "by default.~n"
+        "They will be denied by default in the next minor release and "
+        "entirely remoted in RabbitMQ 4.0.0.~n"
+        "Until they are removed, you can add the following setting to "
+        "keep them permitted:~n"
+        "  \"permit_deprecated_features.classic_mirrored_queues = true\"~n"
+        "You can test RabbitMQ with classic mirrored queues removed by "
+        "adding the following setting to your configuration:~n"
+        "  \"permit_deprecated_features.classic_mirrored_queues = false\"",
+
+        when_denied =>
+        "Classic mirrored queues are deprecated and denied from "
+        "configuration.~n"
+        "See the following setting in your configuration:~n"
+        "  \"permit_deprecated_features.classic_mirrored_queues = false\""
+       },
+      doc_url => "https://blog.rabbitmq.com/posts/2021/08/4.0-deprecation-announcements/",
+      callbacks => #{is_feature_used => {?MODULE, are_cmqs_used}}
+     }}).
 
 -rabbit_boot_step(
    {?MODULE,
@@ -724,30 +757,106 @@ maybe_drop_master_after_sync(Q) when ?is_amqqueue(Q) ->
 
 %%----------------------------------------------------------------------------
 
+does_policy_configure_cmq(KeyList) ->
+    lists:keymember(<<"ha-mode">>, 1, KeyList).
+
+are_cmqs_permitted() ->
+    FeatureName = classic_mirrored_queues,
+    rabbit_deprecated_features:is_permitted(FeatureName).
+
+are_cmqs_used(_) ->
+    Policies = rabbit_policy:list(),
+    HAConfigured =
+    lists:any(
+      fun(Policy) ->
+              KeyList = proplists:get_value(definition, Policy),
+              does_policy_configure_cmq(KeyList)
+      end, Policies),
+
+    Queues = rabbit_db_queue:get_all_durable(),
+    HAUsed =
+    lists:any(
+      fun(Queue) ->
+              Policy = amqqueue:get_policy(Queue),
+              if
+                  is_list(Policy) ->
+                      KeyList = proplists:get_value(definition, Policy),
+                      does_policy_configure_cmq(KeyList);
+                  true ->
+                      false
+              end
+      end, Queues),
+
+    HAConfigured orelse HAUsed.
+
+warn_if_queue_is_mirrored(Q) ->
+    case rabbit_policy:effective_definition(Q) of
+        undefined ->
+            false;
+        Policy ->
+            case does_policy_configure_cmq(Policy) of
+                true ->
+                    Permitted = are_cmqs_permitted(),
+                    #resource{
+                       virtual_host = VHost,
+                       name = Name
+                      } = amqqueue:get_name(Q),
+                    case Permitted of
+                        true ->
+                            ?LOG_WARNING(
+                               "Mirroring is configured for queue `~ts` in "
+                               "vhost `~ts`: it will stop working once "
+                               "classic mirrored queue support is dropped",
+                               [Name, VHost]);
+                        false ->
+                            ?LOG_ERROR(
+                               "Mirroring is configured for queue `~ts` in "
+                               "vhost `~ts`: mirroring is deprecated and "
+                               "disabled, except configured otherwise.",
+                               [Name, VHost])
+                    end,
+                    %% Return a boolean indicating if the caller should abort
+                    %% what it's doing because the feature is not permitted.
+                    not Permitted;
+                false ->
+                    false
+            end
+    end.
+
 validate_policy(KeyList) ->
-    Mode = proplists:get_value(<<"ha-mode">>, KeyList, none),
-    Params = proplists:get_value(<<"ha-params">>, KeyList, none),
-    SyncMode = proplists:get_value(<<"ha-sync-mode">>, KeyList, none),
-    SyncBatchSize = proplists:get_value(
-                      <<"ha-sync-batch-size">>, KeyList, none),
-    PromoteOnShutdown = proplists:get_value(
-                          <<"ha-promote-on-shutdown">>, KeyList, none),
-    PromoteOnFailure = proplists:get_value(
-                          <<"ha-promote-on-failure">>, KeyList, none),
-    case {Mode, Params, SyncMode, SyncBatchSize, PromoteOnShutdown, PromoteOnFailure} of
-        {none, none, none, none, none, none} ->
-            ok;
-        {none, _, _, _, _, _} ->
-            {error, "ha-mode must be specified to specify ha-params, "
-             "ha-sync-mode or ha-promote-on-shutdown", []};
-        _ ->
-            validate_policies(
-              [{Mode, fun validate_mode/1},
-               {Params, ha_params_validator(Mode)},
-               {SyncMode, fun validate_sync_mode/1},
-               {SyncBatchSize, fun validate_sync_batch_size/1},
-               {PromoteOnShutdown, fun validate_pos/1},
-               {PromoteOnFailure, fun validate_pof/1}])
+    case are_cmqs_permitted() of
+        false ->
+            %% If the policy configures classic mirrored queues and this
+            %% feature is disabled, we consider this policy not valid and deny
+            %% it.
+            FeatureName = classic_mirrored_queues,
+            Warning = rabbit_deprecated_features:get_warning(FeatureName),
+            {error, "~ts", [Warning]};
+        true ->
+            Mode = proplists:get_value(<<"ha-mode">>, KeyList, none),
+            Params = proplists:get_value(<<"ha-params">>, KeyList, none),
+            SyncMode = proplists:get_value(<<"ha-sync-mode">>, KeyList, none),
+            SyncBatchSize = proplists:get_value(
+                              <<"ha-sync-batch-size">>, KeyList, none),
+            PromoteOnShutdown = proplists:get_value(
+                                  <<"ha-promote-on-shutdown">>, KeyList, none),
+            PromoteOnFailure = proplists:get_value(
+                                  <<"ha-promote-on-failure">>, KeyList, none),
+            case {Mode, Params, SyncMode, SyncBatchSize, PromoteOnShutdown, PromoteOnFailure} of
+                {none, none, none, none, none, none} ->
+                    ok;
+                {none, _, _, _, _, _} ->
+                    {error, "ha-mode must be specified to specify ha-params, "
+                     "ha-sync-mode or ha-promote-on-shutdown", []};
+                _ ->
+                    validate_policies(
+                      [{Mode, fun validate_mode/1},
+                       {Params, ha_params_validator(Mode)},
+                       {SyncMode, fun validate_sync_mode/1},
+                       {SyncBatchSize, fun validate_sync_batch_size/1},
+                       {PromoteOnShutdown, fun validate_pos/1},
+                       {PromoteOnFailure, fun validate_pof/1}])
+            end
     end.
 
 ha_params_validator(Mode) ->

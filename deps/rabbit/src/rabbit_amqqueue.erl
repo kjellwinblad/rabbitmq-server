@@ -297,11 +297,21 @@ policy_changed(Q1, Q2) ->
     notify_policy_changed(Q2).
 
 is_policy_applicable(Q, Policy) when ?is_amqqueue(Q) ->
-    rabbit_queue_type:is_policy_applicable(Q, Policy);
+    case rabbit_queue_type:is_policy_applicable(Q, Policy) of
+        true ->
+            %% If the applicable policy configures classic mirrored queues and
+            %% this feature is disabled, we consider this policy not
+            %% applicable.
+            not rabbit_mirror_queue_misc:does_policy_configure_cmq(Policy)
+            orelse
+            rabbit_mirror_queue_misc:are_cmqs_permitted();
+        false ->
+            false
+    end;
 is_policy_applicable(QName, Policy) ->
     case lookup(QName) of
         {ok, Q} ->
-            rabbit_queue_type:is_policy_applicable(Q, Policy);
+            is_policy_applicable(Q, Policy);
         _ ->
             %% Defaults to previous behaviour. Apply always
             true
