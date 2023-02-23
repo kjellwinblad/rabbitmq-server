@@ -119,8 +119,9 @@ cp escript/rabbitmqctl ${{ABS_ESCRIPT_PATH}}
 cp _build/${{MIX_ENV}}/lib/rabbitmqctl/ebin/* ${{ABS_EBIN_DIR}}
 cp _build/${{MIX_ENV}}/lib/rabbitmqctl/consolidated/* ${{ABS_CONSOLIDATED_DIR}}
 
-tar --file ${{ABS_FETCHED_SRCS}} \\
-    --create deps
+tar --create \\
+    --file ${{ABS_FETCHED_SRCS}} \\
+    deps
 
 # remove symlinks from the _build directory since it
 # is not used, and bazel does not allow them
@@ -220,6 +221,9 @@ def _elixir_app_to_erlang_app(ctx):
     ebin = ctx.actions.declare_directory(path_join(ctx.label.name, "ebin"))
 
     if ctx.attr.mode == "elixir":
+        if len(ctx.attr.deps) > 0:
+            fail("deps cannot be specified in the 'elixir' mode")
+
         ctx.actions.run_shell(
             inputs = ctx.files.elixir_as_app + ctx.files.elixir_app,
             outputs = [ebin],
@@ -246,6 +250,8 @@ done
                 include = lib_info.include,
                 beam = [ebin],
                 priv = lib_info.priv,
+                license_files = lib_info.license_files,
+                srcs = lib_info.srcs,
                 deps = lib_info.deps,
             ),
         ]
@@ -275,12 +281,14 @@ done
 
         lib_info = ctx.attr.elixir_app[ElixirAppInfo]
 
+        deps = lib_info.deps + ctx.attr.deps
+
         runfiles = ctx.runfiles([ebin]).merge_all([
             erlang_runfiles,
             elixir_runfiles,
         ] + [
             dep[DefaultInfo].default_runfiles
-            for dep in lib_info.deps
+            for dep in deps
         ])
 
         return [
@@ -296,7 +304,7 @@ done
                 priv = lib_info.priv,
                 license_files = lib_info.license_files,
                 srcs = lib_info.srcs,
-                deps = lib_info.deps,
+                deps = deps,
             ),
         ]
 
@@ -316,6 +324,9 @@ elixir_app_to_erlang_app = rule(
                 "elixir",
                 "app",
             ],
+        ),
+        "deps": attr.label_list(
+            providers = [ErlangAppInfo],
         ),
     },
     toolchains = [
@@ -365,4 +376,5 @@ def rabbitmqctl(
         elixir_app = ":" + name,
         mode = "app",
         visibility = visibility,
+        deps = [":elixir"],
     )
