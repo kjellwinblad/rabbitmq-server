@@ -525,6 +525,7 @@ rabbit:
 - rabbit_db_topic_exchange
 - rabbit_db_user
 - rabbit_db_vhost
+- rabbit_db_vhost_defaults
 - rabbit_dead_letter
 - rabbit_definitions
 - rabbit_definitions_hashing
@@ -600,10 +601,6 @@ rabbit:
 - rabbit_observer_cli_classic_queues
 - rabbit_osiris_metrics
 - rabbit_parameter_validation
-- rabbit_password
-- rabbit_password_hashing_md5
-- rabbit_password_hashing_sha256
-- rabbit_password_hashing_sha512
 - rabbit_peer_discovery
 - rabbit_peer_discovery_classic_config
 - rabbit_peer_discovery_dns
@@ -712,7 +709,11 @@ rabbit_common:
 - rabbit_net
 - rabbit_nodes_common
 - rabbit_numerical
+- rabbit_password
 - rabbit_password_hashing
+- rabbit_password_hashing_md5
+- rabbit_password_hashing_sha256
+- rabbit_password_hashing_sha512
 - rabbit_pbe
 - rabbit_peer_discovery_backend
 - rabbit_policy_validator
