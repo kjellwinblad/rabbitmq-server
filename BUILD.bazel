@@ -278,7 +278,7 @@ erlc_opts(
             "+nowarn_export_all",
         ],
         "//conditions:default": [],
-    }),
+    }),  # keep
     visibility = [":__subpackages__"],
 )
 
@@ -287,6 +287,6 @@ erlc_opts(
     values = select({
         "@rules_erlang//:debug_build": without("+deterministic", RABBITMQ_TEST_ERLC_OPTS),
         "//conditions:default": RABBITMQ_TEST_ERLC_OPTS,
-    }),
+    }),  # keep
     visibility = [":__subpackages__"],
 )
