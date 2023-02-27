@@ -31,6 +31,7 @@ all_srcs(name = "all_srcs")
 
 test_suite_beam_files(name = "test_suite_beam_files")
 
+# gazelle:erlang_app_dep_exclude rabbit
 # gazelle:erlang_app_dep_exclude rabbitmq_management_agent
 
 rabbitmq_app(
@@ -43,6 +44,7 @@ rabbitmq_app(
     beam_files = [":beam_files"],
     deps = [
         "//deps/amqp_client:erlang_app",
+        "//deps/rabbit:erlang_app",  # keep
         "//deps/rabbit_common:erlang_app",
         "//deps/rabbitmq_management:erlang_app",
     ],
