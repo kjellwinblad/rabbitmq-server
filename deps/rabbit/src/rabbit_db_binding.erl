@@ -192,21 +192,23 @@ create_in_khepri(#binding{source = SrcName,
         {[Src], [Dst]} ->
             case ChecksFun(Src, Dst) of
                 ok ->
-                    Path = khepri_route_path(Binding),
+                    RoutePath = khepri_route_path(Binding),
                     MaybeSerial = rabbit_exchange:serialise_events(Src),
                     Serial = rabbit_khepri:transaction(
                                fun() ->
-                                       case khepri_tx:get(Path) of
+                                       ExchangePath = khepri_route_exchange_path(SrcName),
+                                       ok = khepri_tx:put(ExchangePath, #{type => Src#exchange.type}),
+                                       case khepri_tx:get(RoutePath) of
                                            {ok, Set} ->
                                                case sets:is_element(Binding, Set) of
                                                    true ->
                                                        already_exists;
                                                    false ->
-                                                       ok = khepri_tx:put(Path, sets:add_element(Binding, Set)),
+                                                       ok = khepri_tx:put(RoutePath, sets:add_element(Binding, Set)),
                                                        serial_in_khepri(MaybeSerial, Src)
                                                end;
                                            _ ->
-                                               ok = khepri_tx:put(Path, sets:add_element(Binding, sets:new())),
+                                               ok = khepri_tx:put(RoutePath, sets:add_element(Binding, sets:new())),
                                                serial_in_khepri(MaybeSerial, Src)
                                        end
                                end, rw),
@@ -547,7 +549,7 @@ get_all_for_destination_in_khepri(Destination) ->
 -spec fold(Fun, Acc) -> Acc when
       Fun :: fun((Binding :: rabbit_types:binding(), Acc) -> Acc),
       Acc :: any().
-%% @doc Folds over all the bindings, making it more efficient than `get_all()` and
+%% @doc Folds over all the bindings, making it more efficient than `get_all()' and
 %% folding over the returned binding list.
 %% Just used by prometheus_rabbitmq_core_metrics_collector to iterate over the bindings.
 %%
@@ -567,7 +569,8 @@ fold_in_mnesia(Fun, Acc) ->
               end, Acc, ?MNESIA_TABLE).
 
 fold_in_khepri(Fun, Acc) ->
-    Path = khepri_routes_path() ++ [?KHEPRI_WILDCARD_STAR,
+    Path = khepri_routes_path() ++ [_VHost = ?KHEPRI_WILDCARD_STAR,
+                                    _SrcName = ?KHEPRI_WILDCARD_STAR,
                                     rabbit_khepri:if_has_data_wildcard()],
     {ok, Res} = rabbit_khepri:fold(
                   Path,
@@ -906,11 +909,28 @@ match_source_and_destination_in_khepri_tx(#resource{virtual_host = VHost, name =
 mnesia_write_to_khepri(rabbit_route, Routes)->
     rabbit_khepri:transaction(
       fun() ->
-              [begin
-                   #route{binding = Binding} = Route,
-                   Path = khepri_route_path(Binding),
-                   add_binding_tx(Path, Binding)
-               end || Route <- Routes]
+              _ = lists:foldl(
+                    fun(Route, Xs0) ->
+                            #route{binding = #binding{source = XName} = Binding} = Route,
+                            Path = khepri_route_path(Binding),
+                            Xs =
+                            case sets:is_element(XName, Xs0) of
+                                true ->
+                                    Xs0;
+                                false ->
+                                    %% If the binding's source is a new exchange,
+                                    %% store the exchange's type in the exchange
+                                    %% name branch of the tree.
+                                    XPath = khepri_route_exchange_path(XName),
+                                    [#exchange{type = XType}] =
+                                    rabbit_db_exchange:get_in_khepri_tx(XName),
+                                    ok = khepri_tx:put(XPath, #{type => XType}),
+                                    sets:add_element(XName, Xs0)
+                            end,
+                            add_binding_tx(Path, Binding),
+                            Xs
+                    end, sets:new([{version, 2}]), Routes),
+              ok
       end, rw);
 mnesia_write_to_khepri(rabbit_durable_route, _)->
     ok;
@@ -1000,6 +1020,9 @@ khepri_route_path(#binding{source = #resource{virtual_host = VHost, name = SrcNa
 
 khepri_routes_path() ->
     [?MODULE, routes].
+
+khepri_route_exchange_path(#resource{virtual_host = VHost, name = SrcName}) ->
+    [?MODULE, routes, VHost, SrcName].
 
 %% --------------------------------------------------------------
 %% Internal
