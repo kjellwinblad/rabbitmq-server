@@ -117,7 +117,8 @@ def rabbitmq_app(
         beam_files = [":beam_files"],
         hdrs = None,
         srcs = [":all_srcs"],
-        deps = []):
+        deps = [],
+        testonly = False):
     if name != "" and name != "erlang_app":
         fail("name attr exists for compatibility only, and must be set to '\"erlang_app\"'")
     if beam_files != [":beam_files"]:
@@ -140,6 +141,7 @@ def rabbitmq_app(
         hdrs = [":public_hdrs"] if hdrs != None else [],
         srcs = srcs,
         deps = deps,
+        testonly = testonly,
     )
 
     test_erlang_app(
