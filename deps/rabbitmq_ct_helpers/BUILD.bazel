@@ -25,6 +25,8 @@ all_test_beam_files(name = "all_test_beam_files")
 
 test_suite_beam_files(name = "test_suite_beam_files")
 
+# gazelle:erlang_app_testonly
+
 # gazelle:erlang_app_dep meck
 # gazelle:erlang_app_dep_exclude rabbit
 # gazelle:erlang_app_dep_exclude rabbitmq_prelaunch

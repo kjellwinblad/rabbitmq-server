@@ -4,10 +4,12 @@ load("@rules_erlang//:filegroup.bzl", "filegroup")
 def all_beam_files(name = "all_beam_files"):
     filegroup(
         name = "beam_files",
+        testonly = True,
         srcs = [":other_beam"],
     )
     erlang_bytecode(
         name = "other_beam",
+        testonly = True,
         srcs = ["src/rabbit_ct_client_helpers.erl"],
         outs = ["ebin/rabbit_ct_client_helpers.beam"],
         app_name = "rabbitmq_ct_client_helpers",
@@ -18,29 +20,36 @@ def all_beam_files(name = "all_beam_files"):
 def all_srcs(name = "all_srcs"):
     filegroup(
         name = "all_srcs",
+        testonly = True,
         srcs = [":public_and_private_hdrs", ":srcs"],
     )
     filegroup(
         name = "public_and_private_hdrs",
+        testonly = True,
         srcs = [":private_hdrs", ":public_hdrs"],
     )
     filegroup(
         name = "licenses",
+        testonly = True,
         srcs = ["LICENSE", "LICENSE-MPL-RabbitMQ"],
     )
     filegroup(
         name = "priv",
+        testonly = True,
     )
 
     filegroup(
         name = "srcs",
+        testonly = True,
         srcs = ["src/rabbit_ct_client_helpers.erl"],
     )
     filegroup(
         name = "private_hdrs",
+        testonly = True,
     )
     filegroup(
         name = "public_hdrs",
+        testonly = True,
     )
 
 def all_test_beam_files(name = "all_test_beam_files"):

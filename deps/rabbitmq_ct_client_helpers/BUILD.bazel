@@ -14,6 +14,8 @@ load(
     "test_suite_beam_files",
 )
 
+# gazelle:erlang_app_testonly
+
 # gazelle:erlang_always_generate_test_beam_files
 
 all_beam_files(name = "all_beam_files")

@@ -4,10 +4,12 @@ load("@rules_erlang//:filegroup.bzl", "filegroup")
 def all_beam_files(name = "all_beam_files"):
     filegroup(
         name = "beam_files",
+        testonly = True,
         srcs = [":other_beam"],
     )
     erlang_bytecode(
         name = "other_beam",
+        testonly = True,
         srcs = [
             "src/cth_log_redirect_any_domains.erl",
             "src/rabbit_control_helper.erl",
@@ -84,21 +86,26 @@ def all_test_beam_files(name = "all_test_beam_files"):
 def all_srcs(name = "all_srcs"):
     filegroup(
         name = "all_srcs",
+        testonly = True,
         srcs = [":public_and_private_hdrs", ":srcs"],
     )
     filegroup(
         name = "public_and_private_hdrs",
+        testonly = True,
         srcs = [":private_hdrs", ":public_hdrs"],
     )
     filegroup(
         name = "licenses",
+        testonly = True,
         srcs = ["LICENSE", "LICENSE-APACHE2", "LICENSE-MPL-RabbitMQ"],
     )
     filegroup(
         name = "priv",
+        testonly = True,
     )
     filegroup(
         name = "srcs",
+        testonly = True,
         srcs = [
             "src/cth_log_redirect_any_domains.erl",
             "src/rabbit_control_helper.erl",
@@ -112,10 +119,12 @@ def all_srcs(name = "all_srcs"):
     )
     filegroup(
         name = "public_hdrs",
+        testonly = True,
         srcs = ["include/rabbit_assert.hrl", "include/rabbit_mgmt_test.hrl"],
     )
     filegroup(
         name = "private_hdrs",
+        testonly = True,
     )
 
 def test_suite_beam_files(name = "test_suite_beam_files"):
