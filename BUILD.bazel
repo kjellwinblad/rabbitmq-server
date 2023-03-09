@@ -62,6 +62,7 @@ exports_files([
 # gazelle:exclude deps/sysmon_handler
 # gazelle:exclude deps/systemd
 # gazelle:exclude deps/thoas
+# gazelle:exclude packaging
 # gazelle:exclude PACKAGES
 # gazelle:exclude logs
 # gazelle:erlang_apps_dirs deps
