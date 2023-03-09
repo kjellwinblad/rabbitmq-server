@@ -10,7 +10,7 @@ NC='\033[0m'
 SUCCESSFUL_SUITES=()
 FAILED_SUITES=()
 
-for f in $SCRIPT/suites/${1:-*.sh}
+for f in $(find $SCRIPT/suites/ -name ${1:-*.sh});
 do
   SUITE=$(basename -- "$f")
   echo "=== Running suite $SUITE ============================================"

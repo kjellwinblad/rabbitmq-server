@@ -1,44 +1,38 @@
-const express = require("express");
-const app = express();
-var path = require('path');
-var httpProxy = require('http-proxy');
-
+var http = require('http'),
+    httpProxy = require('http-proxy');
 const XMLHttpRequest = require('xmlhttprequest').XMLHttpRequest
-var proxy = httpProxy.createProxyServer({});
 
-const rabbitmq_url = process.env.RABBITMQ_URL;
+const rabbitmq_url = process.env.RABBITMQ_URL || 'http://0.0.0.0:15672/';
 const client_id = process.env.CLIENT_ID;
 const client_secret = process.env.CLIENT_SECRET;
 const uaa_url = process.env.UAA_URL;
 
-app.engine('.html', require('ejs').__express);
-app.set('views', path.join(__dirname, 'views'));
-app.set('view engine', 'html');
+//
+// Create a proxy server with custom application logic
+//
+var proxy = httpProxy.createProxyServer({});
 
-app.get('/', function(req, res){
-  let id =  default_if_blank(req.query.client_id, client_id);
-  let secret =  default_if_blank(req.query.client_secret, client_secret);
-  res.render('rabbitmq', {
-    url: rabbitmq_url.replace(/\/?$/, '/') + "login",
-    name: rabbitmq_url + " for " + id,
-    access_token: access_token(id, secret)
+proxy.on('proxyReq', function(proxyReq, req, res, options) {
+  console.log("Proxying " + req.url)
+  if (req.url.endsWith("bootstrap.js")) {
+    proxyReq.setHeader('Authorization', 'Bearer ' + access_token(client_id, client_secret));
+  }
+  proxyReq.setHeader('origin', req.url)
+  proxyReq.setHeader('Access-Control-Allow-Origin', '*');
+  proxyReq.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
+
+});
+var server = http.createServer(function(req, res) {
+  // You can define here your custom logic to handle the request
+  // and then proxy the request.
+  proxy.web(req, res, {
+    target: rabbitmq_url
   });
 });
-proxy.on('proxyReq', function(proxyReq, req, res, options) {
-  proxyReq.setHeader('Authorization', 'Bearer 34343');
-});
-app.get('/proxy/*', function(req, res) {
-    console.log("old request url " + req.url)
-    req.url = '/' + req.url.split('/').slice(2).join('/'); // remove the '/proxy' part
-    console.log("new request url " + req.url)
-    proxy.proxyRequest(req, res, {
-        host: "localhost",
-        port: 15672
-    });
-});
+console.log("fakeproxy listening on port 3000.  RABBITMQ_URL=" + rabbitmq_url)
+console.log(process.env)
+server.listen(3000);
 
-app.listen(3000);
-console.log('Express started on port 3000');
 
 function default_if_blank(value, defaultValue) {
   if (typeof value === "undefined" || value === null || value == "") {
@@ -63,6 +57,7 @@ function access_token(id, secret) {
   req.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
   req.setRequestHeader('Accept', 'application/json');
   req.send(params);
+  console.log("Ret " + req.status)
   if (req.status == 200) {
     const token = JSON.parse(req.responseText).access_token;
     console.log("Token => " + token)

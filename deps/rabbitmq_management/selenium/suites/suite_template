@@ -8,21 +8,40 @@ UAA_DOCKER_IMAGE=cloudfoundry/uaa:75.21.0
 #UAA_DOCKER_IMAGE=cloudfoundry/uaa:76.0.0
 KEYCLOAK_DOCKER_IMAGE=quay.io/keycloak/keycloak:18.0.0
 HTTPD_DOCKER_IMAGE=httpd:latest
+PADDING=""
 
+tabs 4
+
+print() {
+  echo -e "${PADDING}$1"
+}
+begin() {
+  print "\n$@"
+  PADDING="${PADDING}\t"
+}
+end() {
+  PADDING=`echo $PADDING | rev | cut -c 4- | rev`
+  print "$@"
+}
 init_suite() {
   TEST_DIR=${SCRIPT}/../test
   TEST_CASES_DIR=${TEST_DIR}${TEST_CASES_PATH:?"missing TEST_CASES_PATH"}
   TEST_CONFIG_DIR=${TEST_DIR}${TEST_CONFIG_PATH:?"missing TEST_CONFIG_PATH"}
   DOCKER_NETWORK=${DOCKER_NETWORK:-rabbitmq_net}
 
-  echo "> TEST_CASES_DIR: ${TEST_CASES_DIR} "
-  echo "> TEST_CONFIG_DIR: ${TEST_CONFIG_DIR} "
-  echo "> DOCKER_NETWORK: ${DOCKER_NETWORK} "
+  begin "Initializing suite ..."
+
+  print "> TEST_CASES_DIR: ${TEST_CASES_DIR} "
+  print "> TEST_CONFIG_DIR: ${TEST_CONFIG_DIR} "
+  print "> DOCKER_NETWORK: ${DOCKER_NETWORK} "
+
+  end "Initialized suite ..."
 }
 
 BIN=${SCRIPT}/../bin
 LOGS=$PWD/logs/${SUITE}
 SCREENS=$PWD/screens/${SUITE}
+
 
 build_mocha_image() {
   if [[ "$(docker images -q mocha-test 2> /dev/null)" == "" ]]; then
@@ -31,9 +50,9 @@ build_mocha_image() {
 }
 
 start_selenium() {
-  echo "Starting selenium  ..."
+  begin "Starting selenium  ..."
 
-  echo "> SELENIUM_DOCKER_IMAGE: ${SELENIUM_DOCKER_IMAGE}"
+  print "> SELENIUM_DOCKER_IMAGE: ${SELENIUM_DOCKER_IMAGE}"
   kill_container_if_exist selenium
 
   docker run \
@@ -45,7 +64,8 @@ start_selenium() {
     ${SELENIUM_DOCKER_IMAGE}
 
   wait_for_message selenium "Started Selenium Standalone"
-  echo "Selenium ready"
+
+  end "Selenium ready"
 }
 
 kill_container_if_exist() {
@@ -56,10 +76,10 @@ wait_for_message() {
   while ! docker logs $1 | grep -q "$2";
   do
       sleep 5
-      echo "Waiting 5sec for $1 to start ($attemps_left attempts left )..."
+      print "Waiting 5sec for $1 to start ($attemps_left attempts left )..."
       ((attemps_left--))
       if [[ "$attemps_left" -lt 1 ]]; then
-        echo "Timed out waiting"
+        print "Timed out waiting"
         exit 1
       fi
   done
@@ -72,14 +92,14 @@ init_rabbitmq() {
   RABBITMQ_CONFIG_FILENAME=${RABBITMQ_CONFIG_FILENAME:-rabbitmq.config}
   RABBITMQ_CONFIG_FILE=${RABBITMQ_CONFIG_DIR}/${RABBITMQ_CONFIG_FILENAME}
 
-  echo "> RABBITMQ_CONFIG_DIR: ${RABBITMQ_CONFIG_DIR}"
-  echo "> RABBITMQ_CONFIG_FILE: ${RABBITMQ_CONFIG_FILE}"
-  echo "> RABBITMQ_DOCKER_IMAGE: ${RABBITMQ_DOCKER_IMAGE}"
-  echo "> RABBITMQ_URL: ${RABBITMQ_URL}"
+  print "> RABBITMQ_CONFIG_DIR: ${RABBITMQ_CONFIG_DIR}"
+  print "> RABBITMQ_CONFIG_FILE: ${RABBITMQ_CONFIG_FILE}"
+  print "> RABBITMQ_DOCKER_IMAGE: ${RABBITMQ_DOCKER_IMAGE}"
+  print "> RABBITMQ_URL: ${RABBITMQ_URL}"
 }
 
 start_rabbitmq () {
-  echo "Starting rabbitmq ..."
+  begin "Starting rabbitmq ..."
 
   init_rabbitmq
   kill_container_if_exist rabbitmq
@@ -102,19 +122,20 @@ start_rabbitmq () {
     ${RABBITMQ_DOCKER_IMAGE}
 
   wait_for_message rabbitmq "Server startup complete"
-  echo "RabbitMQ ready"
+
+  end "RabbitMQ ready"
 }
 init_uaa() {
   UAA_CONFIG_PATH=${UAA_CONFIG_PATH:?"missing UAA_CONFIG_PATH"}
   UAA_CONFIG_DIR=${TEST_CONFIG_DIR}${UAA_CONFIG_PATH}
   UAA_BASE_URL=http://uaa:8080
 
-  echo "> UAA_CONFIG: ${UAA_CONFIG_DIR}"
-  echo "> UAA_BASE_URL: ${UAA_BASE_URL}"
-  echo "> UAA_DOCKER_IMAGE: ${UAA_DOCKER_IMAGE}"
+  print "> UAA_CONFIG: ${UAA_CONFIG_DIR}"
+  print "> UAA_BASE_URL: ${UAA_BASE_URL}"
+  print "> UAA_DOCKER_IMAGE: ${UAA_DOCKER_IMAGE}"
 }
 start_uaa() {
-  echo "Starting uaa ..."
+  begin "Starting UAA ..."
 
   init_uaa
   kill_container_if_exist uaa
@@ -130,6 +151,7 @@ start_uaa() {
     ${UAA_DOCKER_IMAGE}
 
   wait_for_uaa
+  end "UAA is ready"
 }
 wait_for_uaa() {
   wait_for_oidc_endpoint uaa $UAA_BASE_URL
@@ -140,12 +162,12 @@ init_keycloak() {
   KEYCLOAK_CONFIG_DIR=${TEST_CONFIG_DIR}${KEYCLOAK_CONFIG_PATH}
   KEYCLOAK_BASE_URL=http://keycloak:8080/realms/test
 
-  echo "> KEYCLOAK_CONFIG: ${KEYCLOAK_CONFIG_DIR}"
-  echo "> KEYCLOAK_BASE_URL: ${KEYCLOAK_BASE_URL}"
-  echo "> KEYCLOAK_DOCKER_IMAGE: ${KEYCLOAK_DOCKER_IMAGE}"
+  print "> KEYCLOAK_CONFIG: ${KEYCLOAK_CONFIG_DIR}"
+  print "> KEYCLOAK_BASE_URL: ${KEYCLOAK_BASE_URL}"
+  print "> KEYCLOAK_DOCKER_IMAGE: ${KEYCLOAK_DOCKER_IMAGE}"
 }
 start_keycloak() {
-  echo "Starting keycloak ..."
+  begin "Starting keycloak ..."
 
   init_keycloak
   kill_container_if_exist keycloak
@@ -165,6 +187,7 @@ start_keycloak() {
 		${KEYCLOAK_DOCKER_IMAGE} start-dev
 
   wait_for_keycloak
+  end "Keycloak is ready"
 }
 wait_for_oidc_endpoint() {
   NAME=$1
@@ -172,17 +195,15 @@ wait_for_oidc_endpoint() {
 
   max_retry=10
   counter=0
-  echo "Waiting for $NAME to start ... (BASE_URL: $BASE_URL)"
+  print "Waiting for $NAME to start ... (BASE_URL: $BASE_URL)"
   until (docker run --net ${DOCKER_NETWORK} --rm curlimages/curl:7.85.0 -L --fail ${BASE_URL}/.well-known/openid-configuration >/dev/null 2>&1)
   do
     sleep 5
     [[ counter -eq $max_retry ]] && echo "Failed!" && exit 1
-    echo "Trying again. Try #$counter"
+    print "Trying again. Try #$counter"
     ((counter++))
   done
   sleep 20
-  #docker run --net ${DOCKER_NETWORK}  --rm curlimages/curl:7.85.0 --fail -L ${BASE_URL}/.well-known/openid-configuration
-  echo "$NAME is ready"
 
 }
 wait_for_keycloak() {
@@ -192,11 +213,18 @@ wait_for_keycloak() {
 init_fakeportal() {
   FAKE_PORTAL_URL=${FAKE_PORTAL_URL:-http://fakeportal:3000}
   FAKE_PORTAL_DIR=${SCRIPT}/../fakeportal
-  echo "> FAKE_PORTAL_URL: ${FAKE_PORTAL_URL}"
-  echo "> UAA_BASE_URL: ${UAA_BASE_URL}"
-  echo "> RABBITMQ_URL: ${RABBITMQ_URL}"
+  CLIENT_ID="${CLIENT_ID:-rabbit_idp_user}"
+  CLIENT_SECRET="${CLIENT_SECRET:-rabbit_idp_user}"
+
+  print "> FAKE_PORTAL_URL: ${FAKE_PORTAL_URL}"
+  print "> UAA_BASE_URL: ${UAA_BASE_URL}"
+  print "> RABBITMQ_URL: ${RABBITMQ_URL}"
+  print "> CLIENT_ID: ${CLIENT_ID}"
+  print "> CLIENT_SECRET: ${CLIENT_SECRET}"
 }
 start_fakeportal() {
+  begin "Starting fakeportal ..."
+
   init_fakeportal
   kill_container_if_exist fakeportal
 
@@ -207,12 +235,51 @@ start_fakeportal() {
     --publish 3000:3000 \
     --env RABBITMQ_URL="${RABBITMQ_URL}" \
     --env UAA_URL="${UAA_BASE_URL}" \
-    --env CLIENT_ID="rabbit_idp_user" \
-    --env CLIENT_SECRET="rabbit_idp_user" \
+    --env CLIENT_ID="${CLIENT_ID}" \
+    --env CLIENT_SECRET="${CLIENT_SECRET}" \
     -v ${FAKE_PORTAL_DIR}:/code/fakeportal \
     mocha-test run fakeportal
 
-  wait_for_url http://fakeportal:3000/
+  wait_for_url $FAKE_PORTAL_URL
+
+  end "Fakeportal is ready"
+}
+
+init_fakeproxy() {
+  FAKE_PROXY_URL=${FAKE_PROXY_URL:-http://fakeproxy:3000}
+  FAKE_PROXY_DIR=${SCRIPT}/../fakeportal
+  CLIENT_ID="${CLIENT_ID:-rabbit_idp_user}"
+  CLIENT_SECRET="${CLIENT_SECRET:-rabbit_idp_user}"
+  print "> FAKE_PROXY_URL: ${FAKE_PROXY_URL}"
+  print "> UAA_BASE_URL: ${UAA_BASE_URL}"
+  print "> RABBITMQ_URL: ${RABBITMQ_URL}"
+  print "> CLIENT_ID: ${CLIENT_ID}"
+  print "> CLIENT_SECRET: ${CLIENT_SECRET}"
+}
+start_fakeproxy() {
+  begin "Starting fakeproxy ..."
+
+  init_fakeproxy
+  kill_container_if_exist fakeproxy
+
+  docker run \
+    --detach \
+    --name fakeproxy \
+    --net ${DOCKER_NETWORK} \
+    --publish 3000:3000 \
+    --env RABBITMQ_URL="${RABBITMQ_URL}" \
+    --env UAA_URL="${UAA_BASE_URL}" \
+    --env CLIENT_ID="${CLIENT_ID}" \
+    --env CLIENT_SECRET="${CLIENT_SECRET}" \
+    -v ${FAKE_PROXY_DIR}:/code/fakeportal \
+    mocha-test run fakeproxy
+
+  RABBITMQ_URL="$FAKE_PROXY_URL"
+
+  wait_for_url $FAKE_PROXY_URL
+
+  end "Fakeproxy is ready"
+
 }
 
 wait_for_url() {
@@ -220,26 +287,25 @@ wait_for_url() {
   max_retry=10
   counter=0
   until (docker run --net rabbitmq_net --rm curlimages/curl:7.85.0 -L -f -v $url >/dev/null 2>&1)
-  echo "Waiting for $url to start"
   do
+    print "Waiting for $url to start"
     sleep 5
     [[ counter -eq $max_retry ]] && echo "Failed!" && exit 1
-    echo "Trying again. Try #$counter"
+    print "Trying again. Try #$counter"
     ((counter++))
   done
-  echo "$url is ready"
 }
 
 init_proxy() {
   HTTPD_CONFIG_DIR=${TEST_CONFIG_DIR}
   HTTPD_URL=http://proxy:8080
 
-  echo "> HTTPD_CONFIG: ${HTTPD_CONFIG_DIR}"
-  echo "> HTTPD_URL: ${HTTPD_URL}"
-  echo "> HTTPD_DOCKER_IMAGE: ${HTTPD_DOCKER_IMAGE}"
+  print "> HTTPD_CONFIG: ${HTTPD_CONFIG_DIR}"
+  print "> HTTPD_URL: ${HTTPD_URL}"
+  print "> HTTPD_DOCKER_IMAGE: ${HTTPD_DOCKER_IMAGE}"
 }
 start_proxy() {
-  echo "Starting proxy ..."
+  begin "Starting proxy ..."
 
   init_proxy
   kill_container_if_exist proxy
@@ -252,16 +318,19 @@ start_proxy() {
     --mount "type=bind,source=${HTTPD_CONFIG_DIR},target=/usr/local/apache2/conf" \
     ${HTTPD_DOCKER_IMAGE}
 
-    wait_for_url $HTTPD_URL
+  wait_for_url $HTTPD_URL
+
+  end "Proxy is ready"
 }
 
 
 test () {
   kill_container_if_exist mocha
-  echo "Running tests with env variables:"
-  echo "> RABBITMQ_URL: ${RABBITMQ_URL}"
-  echo "> UAA_URL: ${UAA_URL}"
-  echo "> FAKE_PORTAL_URL: ${FAKE_PORTAL_URL}"
+  begin "Running tests with env variables:"
+
+  print "> RABBITMQ_URL: ${RABBITMQ_URL}"
+  print "> UAA_URL: ${UAA_URL}"
+  print "> FAKE_PORTAL_URL: ${FAKE_PORTAL_URL}"
 
   docker run \
     --rm \
@@ -274,6 +343,7 @@ test () {
     -v ${TEST_DIR}:/code/test \
     -v ${SCREENS}:/screens \
     mocha-test test /code/test${TEST_CASES_PATH}
+
 }
 
 save_logs() {
@@ -281,7 +351,7 @@ save_logs() {
   save_container_logs selenium
 }
 save_container_logs() {
-  docker container ls | grep $1 && docker logs $1 > $LOGS/$1.log || echo "$1 not running"
+  docker container ls | grep $1 >/dev/null 2>&1 && docker logs $1 > $LOGS/$1.log || echo "$1 not running"
 }
 
 run() {
@@ -291,8 +361,7 @@ run() {
   start_selenium
 
   trap _teardown EXIT
-  
-  echo "Set up ..."
+
   [[ $(type -t _setup) == function ]] &&  _setup
 
   test

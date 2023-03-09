@@ -6,23 +6,30 @@ SCRIPT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 SUITE=$( basename "${BASH_SOURCE[0]}" .sh)
 
 # Path to the test cases this suite should run. It is relative to the selenium/test folder
-TEST_CASES_PATH=/basic-auth
+TEST_CASES_PATH=/oauth/with-idp-initiated-via-proxy
 # Path to the folder where all configuration file reside. It is relative to the selenim/test folder
-TEST_CONFIG_PATH=/httpd-proxy
-
-RABBITMQ_URL=http://proxy:8080
+TEST_CONFIG_PATH=/oauth
+# Path to the uaa configuration. It is relative to the TEST_CONFIG_PATH
+UAA_CONFIG_PATH=/uaa
+# Name of the rabbitmq config file. It is relative to the TEST_CONFIG_PATH
+RABBITMQ_CONFIG_FILENAME=rabbitmq-idp-initiated-via-proxy.config
+RABBITMQ_URL=http://fakeproxy:3000
 
 source $SCRIPT/suite_template
 
 _setup () {
+  start_uaa
   start_rabbitmq
-  start_proxy
+  start_fakeproxy
 }
 _save_logs() {
   save_container_logs rabbitmq
+  save_container_logs uaa
+  save_container_logs fakeproxy
 }
 _teardown() {
-  kill_container_if_exist proxy
   kill_container_if_exist rabbitmq
+  kill_container_if_exist uaa
+  kill_container_if_exist fakeproxy
 }
 run

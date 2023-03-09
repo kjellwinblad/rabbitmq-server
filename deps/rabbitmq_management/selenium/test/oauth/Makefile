@@ -39,5 +39,8 @@ stop-keycloak: ## Stop keyclaok
 start-fakeportal: ## Start fake portal
 	@(RABBITMQ_URL=http://localhost:15672 UAA_URL=http://localhost:8080 CLIENT_ID=rabbit_idp_user CLIENT_SECRET=rabbit_idp_user npm run fakeportal)
 
+start-fakeproxy: ## Start fake proxy
+	@(RABBITMQ_URL=http://127.0.0.1:15672 UAA_URL=http://localhost:8080 CLIENT_ID=rabbit_idp_user CLIENT_SECRET=rabbit_idp_user npm run fakeproxy)
+
 delete-screenshots: ## Delete all screenshots
 	@(rm -fr ${SCREENSHOTS_DIR}/*)
