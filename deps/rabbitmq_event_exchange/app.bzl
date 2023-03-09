@@ -8,16 +8,10 @@ def all_beam_files(name = "all_beam_files"):
     )
     erlang_bytecode(
         name = "other_beam",
-        srcs = [
-            "src/rabbit_event_exchange_decorator.erl",
-            "src/rabbit_exchange_type_event.erl",
-        ],
-        outs = [
-            "ebin/rabbit_event_exchange_decorator.beam",
-            "ebin/rabbit_exchange_type_event.beam",
-        ],
-        hdrs = ["include/rabbit_event_exchange.hrl"],
+        srcs = native.glob(["src/**/*.erl"]),
+        hdrs = [":public_and_private_hdrs"],
         app_name = "rabbitmq_event_exchange",
+        dest = "ebin",
         erlc_opts = "//:erlc_opts",
         deps = [
             "//deps/rabbit:erlang_app",
@@ -34,16 +28,10 @@ def all_test_beam_files(name = "all_test_beam_files"):
     erlang_bytecode(
         name = "test_other_beam",
         testonly = True,
-        srcs = [
-            "src/rabbit_event_exchange_decorator.erl",
-            "src/rabbit_exchange_type_event.erl",
-        ],
-        outs = [
-            "test/rabbit_event_exchange_decorator.beam",
-            "test/rabbit_exchange_type_event.beam",
-        ],
-        hdrs = ["include/rabbit_event_exchange.hrl"],
+        srcs = native.glob(["src/**/*.erl"]),
+        hdrs = [":public_and_private_hdrs"],
         app_name = "rabbitmq_event_exchange",
+        dest = "test",
         erlc_opts = "//:test_erlc_opts",
         deps = [
             "//deps/rabbit:erlang_app",
@@ -60,27 +48,29 @@ def all_srcs(name = "all_srcs"):
         name = "public_and_private_hdrs",
         srcs = [":private_hdrs", ":public_hdrs"],
     )
-    filegroup(
-        name = "licenses",
-        srcs = ["LICENSE", "LICENSE-MPL-RabbitMQ"],
-    )
+
     filegroup(
         name = "priv",
-        srcs = ["priv/schema/rabbitmq_event_exchange.schema"],
+        srcs = native.glob(["priv/**/*"]),
     )
     filegroup(
         name = "private_hdrs",
+        srcs = native.glob(["src/**/*.hrl"]),
     )
     filegroup(
         name = "srcs",
-        srcs = [
-            "src/rabbit_event_exchange_decorator.erl",
-            "src/rabbit_exchange_type_event.erl",
-        ],
+        srcs = native.glob([
+            "src/**/*.app.src",
+            "src/**/*.erl",
+        ]),
     )
     filegroup(
         name = "public_hdrs",
-        srcs = ["include/rabbit_event_exchange.hrl"],
+        srcs = native.glob(["include/**/*.hrl"]),
+    )
+    filegroup(
+        name = "license_files",
+        srcs = native.glob(["LICENSE*"]),
     )
 
 def test_suite_beam_files(name = "test_suite_beam_files"):

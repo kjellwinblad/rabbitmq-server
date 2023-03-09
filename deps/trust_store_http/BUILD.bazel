@@ -29,12 +29,15 @@ test_suite_beam_files(name = "test_suite_beam_files")
 rabbitmq_app(
     name = "erlang_app",
     srcs = [":all_srcs"],
+    hdrs = [":public_hdrs"],
     app_description = "Trust store HTTP server",
     app_module = "trust_store_http_app",
     app_name = "trust_store_http",
     app_version = "1.0.0",
     beam_files = [":beam_files"],
     extra_apps = ["ssl"],
+    license_files = [":license_files"],
+    priv = [":priv"],
     deps = [
         "@cowboy//:erlang_app",
         "@thoas//:erlang_app",

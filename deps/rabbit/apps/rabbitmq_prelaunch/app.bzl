@@ -8,9 +8,10 @@ def all_beam_files(name = "all_beam_files"):
     )
     erlang_bytecode(
         name = "other_beam",
-        srcs = ["src/rabbit_boot_state.erl", "src/rabbit_boot_state_sup.erl", "src/rabbit_boot_state_systemd.erl", "src/rabbit_boot_state_xterm_titlebar.erl", "src/rabbit_logger_fmt_helpers.erl", "src/rabbit_logger_json_fmt.erl", "src/rabbit_logger_std_h.erl", "src/rabbit_logger_text_fmt.erl", "src/rabbit_prelaunch.erl", "src/rabbit_prelaunch_app.erl", "src/rabbit_prelaunch_conf.erl", "src/rabbit_prelaunch_dist.erl", "src/rabbit_prelaunch_early_logging.erl", "src/rabbit_prelaunch_erlang_compat.erl", "src/rabbit_prelaunch_errors.erl", "src/rabbit_prelaunch_file.erl", "src/rabbit_prelaunch_sighandler.erl", "src/rabbit_prelaunch_sup.erl"],
-        outs = ["ebin/rabbit_boot_state.beam", "ebin/rabbit_boot_state_sup.beam", "ebin/rabbit_boot_state_systemd.beam", "ebin/rabbit_boot_state_xterm_titlebar.beam", "ebin/rabbit_logger_fmt_helpers.beam", "ebin/rabbit_logger_json_fmt.beam", "ebin/rabbit_logger_std_h.beam", "ebin/rabbit_logger_text_fmt.beam", "ebin/rabbit_prelaunch.beam", "ebin/rabbit_prelaunch_app.beam", "ebin/rabbit_prelaunch_conf.beam", "ebin/rabbit_prelaunch_dist.beam", "ebin/rabbit_prelaunch_early_logging.beam", "ebin/rabbit_prelaunch_erlang_compat.beam", "ebin/rabbit_prelaunch_errors.beam", "ebin/rabbit_prelaunch_file.beam", "ebin/rabbit_prelaunch_sighandler.beam", "ebin/rabbit_prelaunch_sup.beam"],
+        srcs = native.glob(["src/**/*.erl"]),
+        hdrs = [":public_and_private_hdrs"],
         app_name = "rabbitmq_prelaunch",
+        dest = "ebin",
         erlc_opts = "//:erlc_opts",
         deps = ["//deps/rabbit_common:erlang_app"],
     )
@@ -24,9 +25,10 @@ def all_test_beam_files(name = "all_test_beam_files"):
     erlang_bytecode(
         name = "test_other_beam",
         testonly = True,
-        srcs = ["src/rabbit_boot_state.erl", "src/rabbit_boot_state_sup.erl", "src/rabbit_boot_state_systemd.erl", "src/rabbit_boot_state_xterm_titlebar.erl", "src/rabbit_logger_fmt_helpers.erl", "src/rabbit_logger_json_fmt.erl", "src/rabbit_logger_std_h.erl", "src/rabbit_logger_text_fmt.erl", "src/rabbit_prelaunch.erl", "src/rabbit_prelaunch_app.erl", "src/rabbit_prelaunch_conf.erl", "src/rabbit_prelaunch_dist.erl", "src/rabbit_prelaunch_early_logging.erl", "src/rabbit_prelaunch_erlang_compat.erl", "src/rabbit_prelaunch_errors.erl", "src/rabbit_prelaunch_file.erl", "src/rabbit_prelaunch_sighandler.erl", "src/rabbit_prelaunch_sup.erl"],
-        outs = ["test/rabbit_boot_state.beam", "test/rabbit_boot_state_sup.beam", "test/rabbit_boot_state_systemd.beam", "test/rabbit_boot_state_xterm_titlebar.beam", "test/rabbit_logger_fmt_helpers.beam", "test/rabbit_logger_json_fmt.beam", "test/rabbit_logger_std_h.beam", "test/rabbit_logger_text_fmt.beam", "test/rabbit_prelaunch.beam", "test/rabbit_prelaunch_app.beam", "test/rabbit_prelaunch_conf.beam", "test/rabbit_prelaunch_dist.beam", "test/rabbit_prelaunch_early_logging.beam", "test/rabbit_prelaunch_erlang_compat.beam", "test/rabbit_prelaunch_errors.beam", "test/rabbit_prelaunch_file.beam", "test/rabbit_prelaunch_sighandler.beam", "test/rabbit_prelaunch_sup.beam"],
+        srcs = native.glob(["src/**/*.erl"]),
+        hdrs = [":public_and_private_hdrs"],
         app_name = "rabbitmq_prelaunch",
+        dest = "test",
         erlc_opts = "//:test_erlc_opts",
         deps = ["//deps/rabbit_common:erlang_app"],
     )
@@ -40,22 +42,29 @@ def all_srcs(name = "all_srcs"):
         name = "public_and_private_hdrs",
         srcs = [":private_hdrs", ":public_hdrs"],
     )
-    filegroup(
-        name = "licenses",
-    )
 
     filegroup(
         name = "srcs",
-        srcs = ["src/rabbit_boot_state.erl", "src/rabbit_boot_state_sup.erl", "src/rabbit_boot_state_systemd.erl", "src/rabbit_boot_state_xterm_titlebar.erl", "src/rabbit_logger_fmt_helpers.erl", "src/rabbit_logger_json_fmt.erl", "src/rabbit_logger_std_h.erl", "src/rabbit_logger_text_fmt.erl", "src/rabbit_prelaunch.erl", "src/rabbit_prelaunch_app.erl", "src/rabbit_prelaunch_conf.erl", "src/rabbit_prelaunch_dist.erl", "src/rabbit_prelaunch_early_logging.erl", "src/rabbit_prelaunch_erlang_compat.erl", "src/rabbit_prelaunch_errors.erl", "src/rabbit_prelaunch_file.erl", "src/rabbit_prelaunch_sighandler.erl", "src/rabbit_prelaunch_sup.erl"],
+        srcs = native.glob([
+            "src/**/*.app.src",
+            "src/**/*.erl",
+        ]),
     )
     filegroup(
         name = "priv",
+        srcs = native.glob(["priv/**/*"]),
     )
     filegroup(
         name = "private_hdrs",
+        srcs = native.glob(["src/**/*.hrl"]),
     )
     filegroup(
         name = "public_hdrs",
+        srcs = native.glob(["include/**/*.hrl"]),
+    )
+    filegroup(
+        name = "license_files",
+        srcs = native.glob(["LICENSE*"]),
     )
 
 def test_suite_beam_files(name = "test_suite_beam_files"):

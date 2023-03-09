@@ -8,16 +8,10 @@ def all_beam_files(name = "all_beam_files"):
     )
     erlang_bytecode(
         name = "other_beam",
-        srcs = [
-            "src/rabbit_shovel_mgmt.erl",
-            "src/rabbit_shovel_mgmt_util.erl",
-        ],
-        outs = [
-            "ebin/rabbit_shovel_mgmt.beam",
-            "ebin/rabbit_shovel_mgmt_util.beam",
-        ],
-        hdrs = ["src/rabbit_shovel_mgmt.hrl"],
+        srcs = native.glob(["src/**/*.erl"]),
+        hdrs = [":public_and_private_hdrs"],
         app_name = "rabbitmq_shovel_management",
+        dest = "ebin",
         erlc_opts = "//:erlc_opts",
         deps = [
             "//deps/amqp_client:erlang_app",
@@ -35,16 +29,10 @@ def all_test_beam_files(name = "all_test_beam_files"):
     erlang_bytecode(
         name = "test_other_beam",
         testonly = True,
-        srcs = [
-            "src/rabbit_shovel_mgmt.erl",
-            "src/rabbit_shovel_mgmt_util.erl",
-        ],
-        outs = [
-            "test/rabbit_shovel_mgmt.beam",
-            "test/rabbit_shovel_mgmt_util.beam",
-        ],
-        hdrs = ["src/rabbit_shovel_mgmt.hrl"],
+        srcs = native.glob(["src/**/*.erl"]),
+        hdrs = [":public_and_private_hdrs"],
         app_name = "rabbitmq_shovel_management",
+        dest = "test",
         erlc_opts = "//:test_erlc_opts",
         deps = [
             "//deps/amqp_client:erlang_app",
@@ -64,33 +52,27 @@ def all_srcs(name = "all_srcs"):
     )
     filegroup(
         name = "public_hdrs",
+        srcs = native.glob(["include/**/*.hrl"]),
     )
-    filegroup(
-        name = "licenses",
-        srcs = [
-            "LICENSE",
-            "LICENSE-MPL-RabbitMQ",
-        ],
-    )
+
     filegroup(
         name = "priv",
-        srcs = [
-            "priv/www/js/shovel.js",
-            "priv/www/js/tmpl/dynamic-shovel.ejs",
-            "priv/www/js/tmpl/dynamic-shovels.ejs",
-            "priv/www/js/tmpl/shovels.ejs",
-        ],
+        srcs = native.glob(["priv/**/*"]),
     )
     filegroup(
         name = "srcs",
-        srcs = [
-            "src/rabbit_shovel_mgmt.erl",
-            "src/rabbit_shovel_mgmt_util.erl",
-        ],
+        srcs = native.glob([
+            "src/**/*.app.src",
+            "src/**/*.erl",
+        ]),
     )
     filegroup(
         name = "private_hdrs",
-        srcs = ["src/rabbit_shovel_mgmt.hrl"],
+        srcs = native.glob(["src/**/*.hrl"]),
+    )
+    filegroup(
+        name = "license_files",
+        srcs = native.glob(["LICENSE*"]),
     )
 
 def test_suite_beam_files(name = "test_suite_beam_files"):

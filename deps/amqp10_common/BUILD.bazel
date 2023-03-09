@@ -86,6 +86,8 @@ rabbitmq_app(
     app_extra_keys = APP_EXTRA_KEYS,
     app_name = "amqp10_common",
     beam_files = [":beam_files"],
+    license_files = [":license_files"],
+    priv = [":priv"],
 )
 
 xref(

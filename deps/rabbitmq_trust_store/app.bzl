@@ -8,29 +8,26 @@ def all_beam_files(name = "all_beam_files"):
     )
     erlang_bytecode(
         name = "behaviours",
-        srcs = ["src/rabbit_trust_store_certificate_provider.erl"],
-        outs = ["ebin/rabbit_trust_store_certificate_provider.beam"],
+        srcs = [
+            "src/rabbit_trust_store_certificate_provider.erl",
+        ],
+        hdrs = [":public_and_private_hdrs"],
         app_name = "rabbitmq_trust_store",
+        dest = "ebin",
         erlc_opts = "//:erlc_opts",
     )
     erlang_bytecode(
         name = "other_beam",
-        srcs = [
-            "src/rabbit_trust_store.erl",
-            "src/rabbit_trust_store_app.erl",
-            "src/rabbit_trust_store_file_provider.erl",
-            "src/rabbit_trust_store_http_provider.erl",
-            "src/rabbit_trust_store_sup.erl",
-        ],
-        outs = [
-            "ebin/rabbit_trust_store.beam",
-            "ebin/rabbit_trust_store_app.beam",
-            "ebin/rabbit_trust_store_file_provider.beam",
-            "ebin/rabbit_trust_store_http_provider.beam",
-            "ebin/rabbit_trust_store_sup.beam",
-        ],
+        srcs = native.glob(
+            ["src/**/*.erl"],
+            exclude = [
+                "src/rabbit_trust_store_certificate_provider.erl",
+            ],
+        ),
+        hdrs = [":public_and_private_hdrs"],
         app_name = "rabbitmq_trust_store",
         beam = [":behaviours"],
+        dest = "ebin",
         erlc_opts = "//:erlc_opts",
         deps = ["//deps/rabbit_common:erlang_app"],
     )
@@ -44,30 +41,27 @@ def all_test_beam_files(name = "all_test_beam_files"):
     erlang_bytecode(
         name = "test_behaviours",
         testonly = True,
-        srcs = ["src/rabbit_trust_store_certificate_provider.erl"],
-        outs = ["test/rabbit_trust_store_certificate_provider.beam"],
+        srcs = [
+            "src/rabbit_trust_store_certificate_provider.erl",
+        ],
+        hdrs = [":public_and_private_hdrs"],
         app_name = "rabbitmq_trust_store",
+        dest = "test",
         erlc_opts = "//:test_erlc_opts",
     )
     erlang_bytecode(
         name = "test_other_beam",
         testonly = True,
-        srcs = [
-            "src/rabbit_trust_store.erl",
-            "src/rabbit_trust_store_app.erl",
-            "src/rabbit_trust_store_file_provider.erl",
-            "src/rabbit_trust_store_http_provider.erl",
-            "src/rabbit_trust_store_sup.erl",
-        ],
-        outs = [
-            "test/rabbit_trust_store.beam",
-            "test/rabbit_trust_store_app.beam",
-            "test/rabbit_trust_store_file_provider.beam",
-            "test/rabbit_trust_store_http_provider.beam",
-            "test/rabbit_trust_store_sup.beam",
-        ],
+        srcs = native.glob(
+            ["src/**/*.erl"],
+            exclude = [
+                "src/rabbit_trust_store_certificate_provider.erl",
+            ],
+        ),
+        hdrs = [":public_and_private_hdrs"],
         app_name = "rabbitmq_trust_store",
         beam = [":test_behaviours"],
+        dest = "test",
         erlc_opts = "//:test_erlc_opts",
         deps = ["//deps/rabbit_common:erlang_app"],
     )
@@ -81,31 +75,30 @@ def all_srcs(name = "all_srcs"):
         name = "public_and_private_hdrs",
         srcs = [":private_hdrs", ":public_hdrs"],
     )
-    filegroup(
-        name = "licenses",
-        srcs = ["LICENSE", "LICENSE-MPL-RabbitMQ"],
-    )
+
     filegroup(
         name = "priv",
-        srcs = ["priv/schema/rabbitmq_trust_store.schema"],
+        srcs = native.glob(["priv/**/*"]),
     )
     filegroup(
         name = "public_hdrs",
+        srcs = native.glob(["include/**/*.hrl"]),
     )
 
     filegroup(
         name = "srcs",
-        srcs = [
-            "src/rabbit_trust_store.erl",
-            "src/rabbit_trust_store_app.erl",
-            "src/rabbit_trust_store_certificate_provider.erl",
-            "src/rabbit_trust_store_file_provider.erl",
-            "src/rabbit_trust_store_http_provider.erl",
-            "src/rabbit_trust_store_sup.erl",
-        ],
+        srcs = native.glob([
+            "src/**/*.app.src",
+            "src/**/*.erl",
+        ]),
     )
     filegroup(
         name = "private_hdrs",
+        srcs = native.glob(["src/**/*.hrl"]),
+    )
+    filegroup(
+        name = "license_files",
+        srcs = native.glob(["LICENSE*"]),
     )
 
 def test_suite_beam_files(name = "test_suite_beam_files"):

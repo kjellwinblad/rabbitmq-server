@@ -30,8 +30,11 @@ rabbitmq_app(
     name = "erlang_app",
     testonly = True,
     srcs = [":all_srcs"],
+    hdrs = [":public_hdrs"],
     app_name = "rabbitmq_ct_client_helpers",
     beam_files = [":beam_files"],
+    license_files = [":license_files"],
+    priv = [":priv"],
     deps = [
         "//deps/amqp_client:erlang_app",
         "//deps/rabbitmq_ct_helpers:erlang_app",

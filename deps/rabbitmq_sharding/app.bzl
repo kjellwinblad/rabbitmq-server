@@ -8,23 +8,10 @@ def all_beam_files(name = "all_beam_files"):
     )
     erlang_bytecode(
         name = "other_beam",
-        srcs = [
-            "src/rabbit_sharding_exchange_decorator.erl",
-            "src/rabbit_sharding_exchange_type_modulus_hash.erl",
-            "src/rabbit_sharding_interceptor.erl",
-            "src/rabbit_sharding_policy_validator.erl",
-            "src/rabbit_sharding_shard.erl",
-            "src/rabbit_sharding_util.erl",
-        ],
-        outs = [
-            "ebin/rabbit_sharding_exchange_decorator.beam",
-            "ebin/rabbit_sharding_exchange_type_modulus_hash.beam",
-            "ebin/rabbit_sharding_interceptor.beam",
-            "ebin/rabbit_sharding_policy_validator.beam",
-            "ebin/rabbit_sharding_shard.beam",
-            "ebin/rabbit_sharding_util.beam",
-        ],
+        srcs = native.glob(["src/**/*.erl"]),
+        hdrs = [":public_and_private_hdrs"],
         app_name = "rabbitmq_sharding",
+        dest = "ebin",
         erlc_opts = "//:erlc_opts",
         deps = [
             "//deps/rabbit:erlang_app",
@@ -41,23 +28,10 @@ def all_test_beam_files(name = "all_test_beam_files"):
     erlang_bytecode(
         name = "test_other_beam",
         testonly = True,
-        srcs = [
-            "src/rabbit_sharding_exchange_decorator.erl",
-            "src/rabbit_sharding_exchange_type_modulus_hash.erl",
-            "src/rabbit_sharding_interceptor.erl",
-            "src/rabbit_sharding_policy_validator.erl",
-            "src/rabbit_sharding_shard.erl",
-            "src/rabbit_sharding_util.erl",
-        ],
-        outs = [
-            "test/rabbit_sharding_exchange_decorator.beam",
-            "test/rabbit_sharding_exchange_type_modulus_hash.beam",
-            "test/rabbit_sharding_interceptor.beam",
-            "test/rabbit_sharding_policy_validator.beam",
-            "test/rabbit_sharding_shard.beam",
-            "test/rabbit_sharding_util.beam",
-        ],
+        srcs = native.glob(["src/**/*.erl"]),
+        hdrs = [":public_and_private_hdrs"],
         app_name = "rabbitmq_sharding",
+        dest = "test",
         erlc_opts = "//:test_erlc_opts",
         deps = [
             "//deps/rabbit:erlang_app",
@@ -74,30 +48,30 @@ def all_srcs(name = "all_srcs"):
         name = "public_and_private_hdrs",
         srcs = [":private_hdrs", ":public_hdrs"],
     )
-    filegroup(
-        name = "licenses",
-        srcs = ["LICENSE", "LICENSE-MPL-RabbitMQ", "LICENSE-MPL2"],
-    )
+
     filegroup(
         name = "priv",
+        srcs = native.glob(["priv/**/*"]),
     )
 
     filegroup(
         name = "srcs",
-        srcs = [
-            "src/rabbit_sharding_exchange_decorator.erl",
-            "src/rabbit_sharding_exchange_type_modulus_hash.erl",
-            "src/rabbit_sharding_interceptor.erl",
-            "src/rabbit_sharding_policy_validator.erl",
-            "src/rabbit_sharding_shard.erl",
-            "src/rabbit_sharding_util.erl",
-        ],
+        srcs = native.glob([
+            "src/**/*.app.src",
+            "src/**/*.erl",
+        ]),
     )
     filegroup(
         name = "private_hdrs",
+        srcs = native.glob(["src/**/*.hrl"]),
     )
     filegroup(
         name = "public_hdrs",
+        srcs = native.glob(["include/**/*.hrl"]),
+    )
+    filegroup(
+        name = "license_files",
+        srcs = native.glob(["LICENSE*"]),
     )
 
 def test_suite_beam_files(name = "test_suite_beam_files"):

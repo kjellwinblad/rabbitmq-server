@@ -8,22 +8,10 @@ def all_beam_files(name = "all_beam_files"):
     )
     erlang_bytecode(
         name = "other_beam",
-        srcs = [
-            "src/rabbit_peer_discovery_etcd.erl",
-            "src/rabbitmq_peer_discovery_etcd.erl",
-            "src/rabbitmq_peer_discovery_etcd_app.erl",
-            "src/rabbitmq_peer_discovery_etcd_sup.erl",
-            "src/rabbitmq_peer_discovery_etcd_v3_client.erl",
-        ],
-        outs = [
-            "ebin/rabbit_peer_discovery_etcd.beam",
-            "ebin/rabbitmq_peer_discovery_etcd.beam",
-            "ebin/rabbitmq_peer_discovery_etcd_app.beam",
-            "ebin/rabbitmq_peer_discovery_etcd_sup.beam",
-            "ebin/rabbitmq_peer_discovery_etcd_v3_client.beam",
-        ],
-        hdrs = ["include/rabbit_peer_discovery_etcd.hrl"],
+        srcs = native.glob(["src/**/*.erl"]),
+        hdrs = [":public_and_private_hdrs"],
         app_name = "rabbitmq_peer_discovery_etcd",
+        dest = "ebin",
         erlc_opts = "//:erlc_opts",
         deps = [
             "//deps/rabbit_common:erlang_app",
@@ -40,22 +28,10 @@ def all_test_beam_files(name = "all_test_beam_files"):
     erlang_bytecode(
         name = "test_other_beam",
         testonly = True,
-        srcs = [
-            "src/rabbit_peer_discovery_etcd.erl",
-            "src/rabbitmq_peer_discovery_etcd.erl",
-            "src/rabbitmq_peer_discovery_etcd_app.erl",
-            "src/rabbitmq_peer_discovery_etcd_sup.erl",
-            "src/rabbitmq_peer_discovery_etcd_v3_client.erl",
-        ],
-        outs = [
-            "test/rabbit_peer_discovery_etcd.beam",
-            "test/rabbitmq_peer_discovery_etcd.beam",
-            "test/rabbitmq_peer_discovery_etcd_app.beam",
-            "test/rabbitmq_peer_discovery_etcd_sup.beam",
-            "test/rabbitmq_peer_discovery_etcd_v3_client.beam",
-        ],
-        hdrs = ["include/rabbit_peer_discovery_etcd.hrl"],
+        srcs = native.glob(["src/**/*.erl"]),
+        hdrs = [":public_and_private_hdrs"],
         app_name = "rabbitmq_peer_discovery_etcd",
+        dest = "test",
         erlc_opts = "//:test_erlc_opts",
         deps = [
             "//deps/rabbit_common:erlang_app",
@@ -72,30 +48,29 @@ def all_srcs(name = "all_srcs"):
         name = "public_and_private_hdrs",
         srcs = [":private_hdrs", ":public_hdrs"],
     )
-    filegroup(
-        name = "licenses",
-        srcs = ["LICENSE", "LICENSE-MPL-RabbitMQ"],
-    )
+
     filegroup(
         name = "priv",
-        srcs = ["priv/schema/rabbitmq_peer_discovery_etcd.schema"],
+        srcs = native.glob(["priv/**/*"]),
     )
     filegroup(
         name = "private_hdrs",
+        srcs = native.glob(["src/**/*.hrl"]),
     )
     filegroup(
         name = "srcs",
-        srcs = [
-            "src/rabbit_peer_discovery_etcd.erl",
-            "src/rabbitmq_peer_discovery_etcd.erl",
-            "src/rabbitmq_peer_discovery_etcd_app.erl",
-            "src/rabbitmq_peer_discovery_etcd_sup.erl",
-            "src/rabbitmq_peer_discovery_etcd_v3_client.erl",
-        ],
+        srcs = native.glob([
+            "src/**/*.app.src",
+            "src/**/*.erl",
+        ]),
     )
     filegroup(
         name = "public_hdrs",
-        srcs = ["include/rabbit_peer_discovery_etcd.hrl"],
+        srcs = native.glob(["include/**/*.hrl"]),
+    )
+    filegroup(
+        name = "license_files",
+        srcs = native.glob(["LICENSE*"]),
     )
 
 def test_suite_beam_files(name = "test_suite_beam_files"):

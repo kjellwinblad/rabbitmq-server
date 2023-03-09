@@ -104,7 +104,7 @@ def with_test_versions(deps):
     return r
 
 def rabbitmq_app(
-        name = "",
+        name = "erlang_app",
         app_name = "",
         app_version = APP_VERSION,
         app_description = "",
@@ -113,17 +113,18 @@ def rabbitmq_app(
         app_env = "",
         app_extra_keys = "",
         extra_apps = [],
-        extra_priv = [],
         beam_files = [":beam_files"],
         hdrs = None,
         srcs = [":all_srcs"],
+        priv = [":priv"],
+        license_files = [":license_files"],
         deps = [],
         testonly = False):
-    if name != "" and name != "erlang_app":
+    if name != "erlang_app":
         fail("name attr exists for compatibility only, and must be set to '\"erlang_app\"'")
     if beam_files != [":beam_files"]:
         fail("beam_files attr exists for compatibility only, and must be set to '[\":beam_files\"]'")
-    if hdrs != None and hdrs != [":public_hdrs"]:
+    if hdrs != [":public_hdrs"]:
         fail("hdrs attr exists for compatibility only, and must be set to '[\":public_hdrs\"]'")
 
     erlang_app(
@@ -136,10 +137,11 @@ def rabbitmq_app(
         app_env = app_env,
         app_extra_keys = app_extra_keys,
         extra_apps = extra_apps,
-        extra_priv = extra_priv,
         beam_files = beam_files,
-        hdrs = [":public_hdrs"] if hdrs != None else [],
+        hdrs = [":public_hdrs"],
         srcs = srcs,
+        priv = priv,
+        license_files = license_files,
         deps = deps,
         testonly = testonly,
     )
@@ -154,10 +156,11 @@ def rabbitmq_app(
         app_env = app_env,
         app_extra_keys = app_extra_keys,
         extra_apps = extra_apps,
-        extra_priv = extra_priv,
         beam_files = [":test_beam_files"],
-        hdrs = [":public_and_private_hdrs"] if hdrs != None else [],
+        hdrs = [":public_and_private_hdrs"],
         srcs = srcs,
+        priv = priv,
+        license_files = license_files,
         deps = with_test_versions(deps),
     )
 

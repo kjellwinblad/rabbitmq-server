@@ -8,18 +8,10 @@ def all_beam_files(name = "all_beam_files"):
     )
     erlang_bytecode(
         name = "other_beam",
-        srcs = [
-            "src/Elixir.RabbitMQ.CLI.Diagnostics.Commands.ConsistentHashExchangeRingStateCommand.erl",
-            "src/rabbit_db_ch_exchange.erl",
-            "src/rabbit_exchange_type_consistent_hash.erl",
-        ],
-        outs = [
-            "ebin/Elixir.RabbitMQ.CLI.Diagnostics.Commands.ConsistentHashExchangeRingStateCommand.beam",
-            "ebin/rabbit_db_ch_exchange.beam",
-            "ebin/rabbit_exchange_type_consistent_hash.beam",
-        ],
-        hdrs = ["include/rabbitmq_consistent_hash_exchange.hrl"],
+        srcs = native.glob(["src/**/*.erl"]),
+        hdrs = [":public_and_private_hdrs"],
         app_name = "rabbitmq_consistent_hash_exchange",
+        dest = "ebin",
         erlc_opts = "//:erlc_opts",
         deps = [
             "//deps/rabbit:erlang_app",
@@ -37,18 +29,10 @@ def all_test_beam_files(name = "all_test_beam_files"):
     erlang_bytecode(
         name = "test_other_beam",
         testonly = True,
-        srcs = [
-            "src/Elixir.RabbitMQ.CLI.Diagnostics.Commands.ConsistentHashExchangeRingStateCommand.erl",
-            "src/rabbit_db_ch_exchange.erl",
-            "src/rabbit_exchange_type_consistent_hash.erl",
-        ],
-        outs = [
-            "test/Elixir.RabbitMQ.CLI.Diagnostics.Commands.ConsistentHashExchangeRingStateCommand.beam",
-            "test/rabbit_db_ch_exchange.beam",
-            "test/rabbit_exchange_type_consistent_hash.beam",
-        ],
-        hdrs = ["include/rabbitmq_consistent_hash_exchange.hrl"],
+        srcs = native.glob(["src/**/*.erl"]),
+        hdrs = [":public_and_private_hdrs"],
         app_name = "rabbitmq_consistent_hash_exchange",
+        dest = "test",
         erlc_opts = "//:test_erlc_opts",
         deps = [
             "//deps/rabbit:erlang_app",
@@ -66,28 +50,30 @@ def all_srcs(name = "all_srcs"):
         name = "public_and_private_hdrs",
         srcs = [":private_hdrs", ":public_hdrs"],
     )
-    filegroup(
-        name = "licenses",
-        srcs = ["LICENSE", "LICENSE-MPL-RabbitMQ"],
-    )
+
     filegroup(
         name = "priv",
+        srcs = native.glob(["priv/**/*"]),
     )
 
     filegroup(
         name = "srcs",
-        srcs = [
-            "src/Elixir.RabbitMQ.CLI.Diagnostics.Commands.ConsistentHashExchangeRingStateCommand.erl",
-            "src/rabbit_db_ch_exchange.erl",
-            "src/rabbit_exchange_type_consistent_hash.erl",
-        ],
+        srcs = native.glob([
+            "src/**/*.app.src",
+            "src/**/*.erl",
+        ]),
     )
     filegroup(
         name = "public_hdrs",
-        srcs = ["include/rabbitmq_consistent_hash_exchange.hrl"],
+        srcs = native.glob(["include/**/*.hrl"]),
     )
     filegroup(
         name = "private_hdrs",
+        srcs = native.glob(["src/**/*.hrl"]),
+    )
+    filegroup(
+        name = "license_files",
+        srcs = native.glob(["LICENSE*"]),
     )
 
 def test_suite_beam_files(name = "test_suite_beam_files"):

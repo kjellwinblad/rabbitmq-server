@@ -8,48 +8,10 @@ def all_beam_files(name = "all_beam_files"):
     )
     erlang_bytecode(
         name = "other_beam",
-        srcs = [
-            "src/Elixir.RabbitMQ.CLI.Ctl.Commands.ResetStatsDbCommand.erl",
-            "src/exometer_slide.erl",
-            "src/rabbit_mgmt_agent_app.erl",
-            "src/rabbit_mgmt_agent_config.erl",
-            "src/rabbit_mgmt_agent_sup.erl",
-            "src/rabbit_mgmt_agent_sup_sup.erl",
-            "src/rabbit_mgmt_data.erl",
-            "src/rabbit_mgmt_data_compat.erl",
-            "src/rabbit_mgmt_db_handler.erl",
-            "src/rabbit_mgmt_external_stats.erl",
-            "src/rabbit_mgmt_ff.erl",
-            "src/rabbit_mgmt_format.erl",
-            "src/rabbit_mgmt_gc.erl",
-            "src/rabbit_mgmt_metrics_collector.erl",
-            "src/rabbit_mgmt_metrics_gc.erl",
-            "src/rabbit_mgmt_storage.erl",
-        ],
-        outs = [
-            "ebin/Elixir.RabbitMQ.CLI.Ctl.Commands.ResetStatsDbCommand.beam",
-            "ebin/exometer_slide.beam",
-            "ebin/rabbit_mgmt_agent_app.beam",
-            "ebin/rabbit_mgmt_agent_config.beam",
-            "ebin/rabbit_mgmt_agent_sup.beam",
-            "ebin/rabbit_mgmt_agent_sup_sup.beam",
-            "ebin/rabbit_mgmt_data.beam",
-            "ebin/rabbit_mgmt_data_compat.beam",
-            "ebin/rabbit_mgmt_db_handler.beam",
-            "ebin/rabbit_mgmt_external_stats.beam",
-            "ebin/rabbit_mgmt_ff.beam",
-            "ebin/rabbit_mgmt_format.beam",
-            "ebin/rabbit_mgmt_gc.beam",
-            "ebin/rabbit_mgmt_metrics_collector.beam",
-            "ebin/rabbit_mgmt_metrics_gc.beam",
-            "ebin/rabbit_mgmt_storage.beam",
-        ],
-        hdrs = [
-            "include/rabbit_mgmt_agent.hrl",
-            "include/rabbit_mgmt_metrics.hrl",
-            "include/rabbit_mgmt_records.hrl",
-        ],
+        srcs = native.glob(["src/**/*.erl"]),
+        hdrs = [":public_and_private_hdrs"],
         app_name = "rabbitmq_management_agent",
+        dest = "ebin",
         erlc_opts = "//:erlc_opts",
         deps = [
             "//deps/rabbit:erlang_app",
@@ -67,48 +29,10 @@ def all_test_beam_files(name = "all_test_beam_files"):
     erlang_bytecode(
         name = "test_other_beam",
         testonly = True,
-        srcs = [
-            "src/Elixir.RabbitMQ.CLI.Ctl.Commands.ResetStatsDbCommand.erl",
-            "src/exometer_slide.erl",
-            "src/rabbit_mgmt_agent_app.erl",
-            "src/rabbit_mgmt_agent_config.erl",
-            "src/rabbit_mgmt_agent_sup.erl",
-            "src/rabbit_mgmt_agent_sup_sup.erl",
-            "src/rabbit_mgmt_data.erl",
-            "src/rabbit_mgmt_data_compat.erl",
-            "src/rabbit_mgmt_db_handler.erl",
-            "src/rabbit_mgmt_external_stats.erl",
-            "src/rabbit_mgmt_ff.erl",
-            "src/rabbit_mgmt_format.erl",
-            "src/rabbit_mgmt_gc.erl",
-            "src/rabbit_mgmt_metrics_collector.erl",
-            "src/rabbit_mgmt_metrics_gc.erl",
-            "src/rabbit_mgmt_storage.erl",
-        ],
-        outs = [
-            "test/Elixir.RabbitMQ.CLI.Ctl.Commands.ResetStatsDbCommand.beam",
-            "test/exometer_slide.beam",
-            "test/rabbit_mgmt_agent_app.beam",
-            "test/rabbit_mgmt_agent_config.beam",
-            "test/rabbit_mgmt_agent_sup.beam",
-            "test/rabbit_mgmt_agent_sup_sup.beam",
-            "test/rabbit_mgmt_data.beam",
-            "test/rabbit_mgmt_data_compat.beam",
-            "test/rabbit_mgmt_db_handler.beam",
-            "test/rabbit_mgmt_external_stats.beam",
-            "test/rabbit_mgmt_ff.beam",
-            "test/rabbit_mgmt_format.beam",
-            "test/rabbit_mgmt_gc.beam",
-            "test/rabbit_mgmt_metrics_collector.beam",
-            "test/rabbit_mgmt_metrics_gc.beam",
-            "test/rabbit_mgmt_storage.beam",
-        ],
-        hdrs = [
-            "include/rabbit_mgmt_agent.hrl",
-            "include/rabbit_mgmt_metrics.hrl",
-            "include/rabbit_mgmt_records.hrl",
-        ],
+        srcs = native.glob(["src/**/*.erl"]),
+        hdrs = [":public_and_private_hdrs"],
         app_name = "rabbitmq_management_agent",
+        dest = "test",
         erlc_opts = "//:test_erlc_opts",
         deps = [
             "//deps/rabbit:erlang_app",
@@ -126,45 +50,29 @@ def all_srcs(name = "all_srcs"):
         name = "public_and_private_hdrs",
         srcs = [":private_hdrs", ":public_hdrs"],
     )
-    filegroup(
-        name = "licenses",
-        srcs = ["LICENSE", "LICENSE-MPL-RabbitMQ"],
-    )
+
     filegroup(
         name = "priv",
-        srcs = ["priv/schema/rabbitmq_management_agent.schema"],
+        srcs = native.glob(["priv/**/*"]),
     )
     filegroup(
         name = "private_hdrs",
+        srcs = native.glob(["src/**/*.hrl"]),
     )
     filegroup(
         name = "srcs",
-        srcs = [
-            "src/Elixir.RabbitMQ.CLI.Ctl.Commands.ResetStatsDbCommand.erl",
-            "src/exometer_slide.erl",
-            "src/rabbit_mgmt_agent_app.erl",
-            "src/rabbit_mgmt_agent_config.erl",
-            "src/rabbit_mgmt_agent_sup.erl",
-            "src/rabbit_mgmt_agent_sup_sup.erl",
-            "src/rabbit_mgmt_data.erl",
-            "src/rabbit_mgmt_data_compat.erl",
-            "src/rabbit_mgmt_db_handler.erl",
-            "src/rabbit_mgmt_external_stats.erl",
-            "src/rabbit_mgmt_ff.erl",
-            "src/rabbit_mgmt_format.erl",
-            "src/rabbit_mgmt_gc.erl",
-            "src/rabbit_mgmt_metrics_collector.erl",
-            "src/rabbit_mgmt_metrics_gc.erl",
-            "src/rabbit_mgmt_storage.erl",
-        ],
+        srcs = native.glob([
+            "src/**/*.app.src",
+            "src/**/*.erl",
+        ]),
     )
     filegroup(
         name = "public_hdrs",
-        srcs = [
-            "include/rabbit_mgmt_agent.hrl",
-            "include/rabbit_mgmt_metrics.hrl",
-            "include/rabbit_mgmt_records.hrl",
-        ],
+        srcs = native.glob(["include/**/*.hrl"]),
+    )
+    filegroup(
+        name = "license_files",
+        srcs = native.glob(["LICENSE*"]),
     )
 
 def test_suite_beam_files(name = "test_suite_beam_files"):

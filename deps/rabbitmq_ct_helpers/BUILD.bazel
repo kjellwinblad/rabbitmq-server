@@ -39,12 +39,8 @@ rabbitmq_app(
     hdrs = [":public_hdrs"],
     app_name = "rabbitmq_ct_helpers",
     beam_files = [":beam_files"],
-    extra_priv = glob(
-        ["tools/terraform/**/*"],
-    ) + [
-        "tools/tls-certs/Makefile",
-        "tools/tls-certs/openssl.cnf.in",
-    ],
+    license_files = [":license_files"],
+    priv = [":priv"],
     deps = [
         "//deps/rabbit_common:erlang_app",
         "@meck//:erlang_app",

@@ -8,36 +8,10 @@ def all_beam_files(name = "all_beam_files"):
     )
     erlang_bytecode(
         name = "other_beam",
-        srcs = [
-            "src/Elixir.RabbitMQ.CLI.Ctl.Commands.ListStompConnectionsCommand.erl",
-            "src/rabbit_stomp.erl",
-            "src/rabbit_stomp_client_sup.erl",
-            "src/rabbit_stomp_connection_info.erl",
-            "src/rabbit_stomp_frame.erl",
-            "src/rabbit_stomp_internal_event_handler.erl",
-            "src/rabbit_stomp_processor.erl",
-            "src/rabbit_stomp_reader.erl",
-            "src/rabbit_stomp_sup.erl",
-            "src/rabbit_stomp_util.erl",
-        ],
-        outs = [
-            "ebin/Elixir.RabbitMQ.CLI.Ctl.Commands.ListStompConnectionsCommand.beam",
-            "ebin/rabbit_stomp.beam",
-            "ebin/rabbit_stomp_client_sup.beam",
-            "ebin/rabbit_stomp_connection_info.beam",
-            "ebin/rabbit_stomp_frame.beam",
-            "ebin/rabbit_stomp_internal_event_handler.beam",
-            "ebin/rabbit_stomp_processor.beam",
-            "ebin/rabbit_stomp_reader.beam",
-            "ebin/rabbit_stomp_sup.beam",
-            "ebin/rabbit_stomp_util.beam",
-        ],
-        hdrs = [
-            "include/rabbit_stomp.hrl",
-            "include/rabbit_stomp_frame.hrl",
-            "include/rabbit_stomp_headers.hrl",
-        ],
+        srcs = native.glob(["src/**/*.erl"]),
+        hdrs = [":public_and_private_hdrs"],
         app_name = "rabbitmq_stomp",
+        dest = "ebin",
         erlc_opts = "//:erlc_opts",
         deps = [
             "//deps/amqp_client:erlang_app",
@@ -56,36 +30,10 @@ def all_test_beam_files(name = "all_test_beam_files"):
     erlang_bytecode(
         name = "test_other_beam",
         testonly = True,
-        srcs = [
-            "src/Elixir.RabbitMQ.CLI.Ctl.Commands.ListStompConnectionsCommand.erl",
-            "src/rabbit_stomp.erl",
-            "src/rabbit_stomp_client_sup.erl",
-            "src/rabbit_stomp_connection_info.erl",
-            "src/rabbit_stomp_frame.erl",
-            "src/rabbit_stomp_internal_event_handler.erl",
-            "src/rabbit_stomp_processor.erl",
-            "src/rabbit_stomp_reader.erl",
-            "src/rabbit_stomp_sup.erl",
-            "src/rabbit_stomp_util.erl",
-        ],
-        outs = [
-            "test/Elixir.RabbitMQ.CLI.Ctl.Commands.ListStompConnectionsCommand.beam",
-            "test/rabbit_stomp.beam",
-            "test/rabbit_stomp_client_sup.beam",
-            "test/rabbit_stomp_connection_info.beam",
-            "test/rabbit_stomp_frame.beam",
-            "test/rabbit_stomp_internal_event_handler.beam",
-            "test/rabbit_stomp_processor.beam",
-            "test/rabbit_stomp_reader.beam",
-            "test/rabbit_stomp_sup.beam",
-            "test/rabbit_stomp_util.beam",
-        ],
-        hdrs = [
-            "include/rabbit_stomp.hrl",
-            "include/rabbit_stomp_frame.hrl",
-            "include/rabbit_stomp_headers.hrl",
-        ],
+        srcs = native.glob(["src/**/*.erl"]),
+        hdrs = [":public_and_private_hdrs"],
         app_name = "rabbitmq_stomp",
+        dest = "test",
         erlc_opts = "//:test_erlc_opts",
         deps = [
             "//deps/amqp_client:erlang_app",
@@ -104,39 +52,29 @@ def all_srcs(name = "all_srcs"):
         name = "public_and_private_hdrs",
         srcs = [":private_hdrs", ":public_hdrs"],
     )
-    filegroup(
-        name = "licenses",
-        srcs = ["LICENSE", "LICENSE-MPL-RabbitMQ"],
-    )
+
     filegroup(
         name = "priv",
-        srcs = ["priv/schema/rabbitmq_stomp.schema"],
+        srcs = native.glob(["priv/**/*"]),
     )
     filegroup(
         name = "private_hdrs",
+        srcs = native.glob(["src/**/*.hrl"]),
     )
     filegroup(
         name = "srcs",
-        srcs = [
-            "src/Elixir.RabbitMQ.CLI.Ctl.Commands.ListStompConnectionsCommand.erl",
-            "src/rabbit_stomp.erl",
-            "src/rabbit_stomp_client_sup.erl",
-            "src/rabbit_stomp_connection_info.erl",
-            "src/rabbit_stomp_frame.erl",
-            "src/rabbit_stomp_internal_event_handler.erl",
-            "src/rabbit_stomp_processor.erl",
-            "src/rabbit_stomp_reader.erl",
-            "src/rabbit_stomp_sup.erl",
-            "src/rabbit_stomp_util.erl",
-        ],
+        srcs = native.glob([
+            "src/**/*.app.src",
+            "src/**/*.erl",
+        ]),
     )
     filegroup(
         name = "public_hdrs",
-        srcs = [
-            "include/rabbit_stomp.hrl",
-            "include/rabbit_stomp_frame.hrl",
-            "include/rabbit_stomp_headers.hrl",
-        ],
+        srcs = native.glob(["include/**/*.hrl"]),
+    )
+    filegroup(
+        name = "license_files",
+        srcs = native.glob(["LICENSE*"]),
     )
 
 def test_suite_beam_files(name = "test_suite_beam_files"):

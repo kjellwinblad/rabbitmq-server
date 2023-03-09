@@ -75,6 +75,8 @@ rabbitmq_app(
         "public_key",
         "ssl",
     ],
+    license_files = [":license_files"],
+    priv = [":priv"],
     deps = [
         "//deps/rabbit_common:erlang_app",
         "@credentials_obfuscation//:erlang_app",

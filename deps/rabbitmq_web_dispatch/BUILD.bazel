@@ -42,6 +42,7 @@ test_suite_beam_files(name = "test_suite_beam_files")
 rabbitmq_app(
     name = "erlang_app",
     srcs = [":all_srcs"],
+    hdrs = [":public_hdrs"],
     app_description = APP_DESCRIPTION,
     app_extra_keys = BROKER_VERSION_REQUIREMENTS_ANY,
     app_module = APP_MODULE,
@@ -49,6 +50,8 @@ rabbitmq_app(
     app_version = APP_VERSION,
     beam_files = [":beam_files"],
     extra_apps = ["inets"],
+    license_files = [":license_files"],
+    priv = [":priv"],
     deps = [
         "//deps/rabbit:erlang_app",
         "//deps/rabbit_common:erlang_app",

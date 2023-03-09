@@ -10,9 +10,10 @@ def all_beam_files(name = "all_beam_files"):
     erlang_bytecode(
         name = "other_beam",
         testonly = True,
-        srcs = ["src/rabbit_ct_client_helpers.erl"],
-        outs = ["ebin/rabbit_ct_client_helpers.beam"],
+        srcs = native.glob(["src/**/*.erl"]),
+        hdrs = [":public_and_private_hdrs"],
         app_name = "rabbitmq_ct_client_helpers",
+        dest = "ebin",
         erlc_opts = "//:erlc_opts",
         deps = ["//deps/amqp_client:erlang_app"],
     )
@@ -28,28 +29,35 @@ def all_srcs(name = "all_srcs"):
         testonly = True,
         srcs = [":private_hdrs", ":public_hdrs"],
     )
-    filegroup(
-        name = "licenses",
-        testonly = True,
-        srcs = ["LICENSE", "LICENSE-MPL-RabbitMQ"],
-    )
+
     filegroup(
         name = "priv",
         testonly = True,
+        srcs = native.glob(["priv/**/*"]),
     )
 
     filegroup(
         name = "srcs",
         testonly = True,
-        srcs = ["src/rabbit_ct_client_helpers.erl"],
+        srcs = native.glob([
+            "src/**/*.app.src",
+            "src/**/*.erl",
+        ]),
     )
     filegroup(
         name = "private_hdrs",
         testonly = True,
+        srcs = native.glob(["src/**/*.hrl"]),
     )
     filegroup(
         name = "public_hdrs",
         testonly = True,
+        srcs = native.glob(["include/**/*.hrl"]),
+    )
+    filegroup(
+        name = "license_files",
+        testonly = True,
+        srcs = native.glob(["LICENSE*"]),
     )
 
 def all_test_beam_files(name = "all_test_beam_files"):
@@ -61,9 +69,10 @@ def all_test_beam_files(name = "all_test_beam_files"):
     erlang_bytecode(
         name = "test_other_beam",
         testonly = True,
-        srcs = ["src/rabbit_ct_client_helpers.erl"],
-        outs = ["test/rabbit_ct_client_helpers.beam"],
+        srcs = native.glob(["src/**/*.erl"]),
+        hdrs = [":public_and_private_hdrs"],
         app_name = "rabbitmq_ct_client_helpers",
+        dest = "test",
         erlc_opts = "//:test_erlc_opts",
         deps = ["//deps/amqp_client:erlang_app"],
     )

@@ -35,6 +35,7 @@ test_suite_beam_files(name = "test_suite_beam_files")
 rabbitmq_app(
     name = "erlang_app",
     srcs = [":all_srcs"],
+    hdrs = [":public_hdrs"],
     app_description = "OAuth 2 and JWT-based AuthN and AuthZ backend",
     app_name = "rabbitmq_auth_backend_oauth2",
     beam_files = [":beam_files"],
@@ -42,6 +43,8 @@ rabbitmq_app(
         "inets",
         "public_key",
     ],
+    license_files = [":license_files"],
+    priv = [":priv"],
     deps = [
         "//deps/rabbit:erlang_app",
         "@base64url//:erlang_app",

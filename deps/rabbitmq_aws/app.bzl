@@ -8,28 +8,10 @@ def all_beam_files(name = "all_beam_files"):
     )
     erlang_bytecode(
         name = "other_beam",
-        srcs = [
-            "src/rabbitmq_aws.erl",
-            "src/rabbitmq_aws_app.erl",
-            "src/rabbitmq_aws_config.erl",
-            "src/rabbitmq_aws_json.erl",
-            "src/rabbitmq_aws_sign.erl",
-            "src/rabbitmq_aws_sup.erl",
-            "src/rabbitmq_aws_urilib.erl",
-            "src/rabbitmq_aws_xml.erl",
-        ],
-        outs = [
-            "ebin/rabbitmq_aws.beam",
-            "ebin/rabbitmq_aws_app.beam",
-            "ebin/rabbitmq_aws_config.beam",
-            "ebin/rabbitmq_aws_json.beam",
-            "ebin/rabbitmq_aws_sign.beam",
-            "ebin/rabbitmq_aws_sup.beam",
-            "ebin/rabbitmq_aws_urilib.beam",
-            "ebin/rabbitmq_aws_xml.beam",
-        ],
-        hdrs = ["include/rabbitmq_aws.hrl"],
+        srcs = native.glob(["src/**/*.erl"]),
+        hdrs = [":public_and_private_hdrs"],
         app_name = "rabbitmq_aws",
+        dest = "ebin",
         erlc_opts = "//:erlc_opts",
     )
 
@@ -42,28 +24,10 @@ def all_test_beam_files(name = "all_test_beam_files"):
     erlang_bytecode(
         name = "test_other_beam",
         testonly = True,
-        srcs = [
-            "src/rabbitmq_aws.erl",
-            "src/rabbitmq_aws_app.erl",
-            "src/rabbitmq_aws_config.erl",
-            "src/rabbitmq_aws_json.erl",
-            "src/rabbitmq_aws_sign.erl",
-            "src/rabbitmq_aws_sup.erl",
-            "src/rabbitmq_aws_urilib.erl",
-            "src/rabbitmq_aws_xml.erl",
-        ],
-        outs = [
-            "test/rabbitmq_aws.beam",
-            "test/rabbitmq_aws_app.beam",
-            "test/rabbitmq_aws_config.beam",
-            "test/rabbitmq_aws_json.beam",
-            "test/rabbitmq_aws_sign.beam",
-            "test/rabbitmq_aws_sup.beam",
-            "test/rabbitmq_aws_urilib.beam",
-            "test/rabbitmq_aws_xml.beam",
-        ],
-        hdrs = ["include/rabbitmq_aws.hrl"],
+        srcs = native.glob(["src/**/*.erl"]),
+        hdrs = [":public_and_private_hdrs"],
         app_name = "rabbitmq_aws",
+        dest = "test",
         erlc_opts = "//:test_erlc_opts",
     )
 
@@ -76,38 +40,29 @@ def all_srcs(name = "all_srcs"):
         name = "public_and_private_hdrs",
         srcs = [":private_hdrs", ":public_hdrs"],
     )
-    filegroup(
-        name = "licenses",
-        srcs = [
-            "LICENSE",
-            "LICENSE-erlcloud",
-            "LICENSE-httpc_aws",
-            "LICENSE-rabbitmq_aws",
-        ],
-    )
+
     filegroup(
         name = "priv",
-        srcs = ["priv/schema/rabbitmq_aws.schema"],
+        srcs = native.glob(["priv/**/*"]),
     )
     filegroup(
         name = "private_hdrs",
+        srcs = native.glob(["src/**/*.hrl"]),
     )
     filegroup(
         name = "srcs",
-        srcs = [
-            "src/rabbitmq_aws.erl",
-            "src/rabbitmq_aws_app.erl",
-            "src/rabbitmq_aws_config.erl",
-            "src/rabbitmq_aws_json.erl",
-            "src/rabbitmq_aws_sign.erl",
-            "src/rabbitmq_aws_sup.erl",
-            "src/rabbitmq_aws_urilib.erl",
-            "src/rabbitmq_aws_xml.erl",
-        ],
+        srcs = native.glob([
+            "src/**/*.app.src",
+            "src/**/*.erl",
+        ]),
     )
     filegroup(
         name = "public_hdrs",
-        srcs = ["include/rabbitmq_aws.hrl"],
+        srcs = native.glob(["include/**/*.hrl"]),
+    )
+    filegroup(
+        name = "license_files",
+        srcs = native.glob(["LICENSE*"]),
     )
 
 def test_suite_beam_files(name = "test_suite_beam_files"):

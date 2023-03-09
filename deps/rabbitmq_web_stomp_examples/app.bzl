@@ -8,9 +8,10 @@ def all_beam_files(name = "all_beam_files"):
     )
     erlang_bytecode(
         name = "other_beam",
-        srcs = ["src/rabbit_web_stomp_examples_app.erl"],
-        outs = ["ebin/rabbit_web_stomp_examples_app.beam"],
+        srcs = native.glob(["src/**/*.erl"]),
+        hdrs = [":public_and_private_hdrs"],
         app_name = "rabbitmq_web_stomp_examples",
+        dest = "ebin",
         erlc_opts = "//:erlc_opts",
     )
 
@@ -23,37 +24,30 @@ def all_srcs(name = "all_srcs"):
         name = "public_and_private_hdrs",
         srcs = [":private_hdrs", ":public_hdrs"],
     )
-    filegroup(
-        name = "licenses",
-        srcs = [
-            "LICENSE",
-            "LICENSE-APL2-Stomp-Websocket",
-            "LICENSE-MPL-RabbitMQ",
-        ],
-    )
+
     filegroup(
         name = "priv",
-        srcs = [
-            "priv/bunny.html",
-            "priv/bunny.png",
-            "priv/echo.html",
-            "priv/index.html",
-            "priv/main.css",
-            "priv/pencil.cur",
-            "priv/stomp.js",
-            "priv/temp-queue.html",
-        ],
+        srcs = native.glob(["priv/**/*"]),
     )
     filegroup(
         name = "public_hdrs",
+        srcs = native.glob(["include/**/*.hrl"]),
     )
 
     filegroup(
         name = "srcs",
-        srcs = ["src/rabbit_web_stomp_examples_app.erl"],
+        srcs = native.glob([
+            "src/**/*.app.src",
+            "src/**/*.erl",
+        ]),
     )
     filegroup(
         name = "private_hdrs",
+        srcs = native.glob(["src/**/*.hrl"]),
+    )
+    filegroup(
+        name = "license_files",
+        srcs = native.glob(["LICENSE*"]),
     )
 
 def all_test_beam_files(name = "all_test_beam_files"):
@@ -65,9 +59,10 @@ def all_test_beam_files(name = "all_test_beam_files"):
     erlang_bytecode(
         name = "test_other_beam",
         testonly = True,
-        srcs = ["src/rabbit_web_stomp_examples_app.erl"],
-        outs = ["test/rabbit_web_stomp_examples_app.beam"],
+        srcs = native.glob(["src/**/*.erl"]),
+        hdrs = [":public_and_private_hdrs"],
         app_name = "rabbitmq_web_stomp_examples",
+        dest = "test",
         erlc_opts = "//:test_erlc_opts",
     )
 

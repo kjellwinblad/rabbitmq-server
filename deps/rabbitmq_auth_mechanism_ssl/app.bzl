@@ -8,9 +8,10 @@ def all_beam_files(name = "all_beam_files"):
     )
     erlang_bytecode(
         name = "other_beam",
-        srcs = ["src/rabbit_auth_mechanism_ssl.erl", "src/rabbit_auth_mechanism_ssl_app.erl"],
-        outs = ["ebin/rabbit_auth_mechanism_ssl.beam", "ebin/rabbit_auth_mechanism_ssl_app.beam"],
+        srcs = native.glob(["src/**/*.erl"]),
+        hdrs = [":public_and_private_hdrs"],
         app_name = "rabbitmq_auth_mechanism_ssl",
+        dest = "ebin",
         erlc_opts = "//:erlc_opts",
         deps = ["//deps/rabbit_common:erlang_app"],
     )
@@ -24,23 +25,30 @@ def all_srcs(name = "all_srcs"):
         name = "public_and_private_hdrs",
         srcs = [":private_hdrs", ":public_hdrs"],
     )
-    filegroup(
-        name = "licenses",
-        srcs = ["LICENSE", "LICENSE-MPL-RabbitMQ"],
-    )
+
     filegroup(
         name = "priv",
+        srcs = native.glob(["priv/**/*"]),
     )
 
     filegroup(
         name = "srcs",
-        srcs = ["src/rabbit_auth_mechanism_ssl.erl", "src/rabbit_auth_mechanism_ssl_app.erl"],
+        srcs = native.glob([
+            "src/**/*.app.src",
+            "src/**/*.erl",
+        ]),
     )
     filegroup(
         name = "private_hdrs",
+        srcs = native.glob(["src/**/*.hrl"]),
     )
     filegroup(
         name = "public_hdrs",
+        srcs = native.glob(["include/**/*.hrl"]),
+    )
+    filegroup(
+        name = "license_files",
+        srcs = native.glob(["LICENSE*"]),
     )
 
 def all_test_beam_files(name = "all_test_beam_files"):
@@ -52,9 +60,10 @@ def all_test_beam_files(name = "all_test_beam_files"):
     erlang_bytecode(
         name = "test_other_beam",
         testonly = True,
-        srcs = ["src/rabbit_auth_mechanism_ssl.erl", "src/rabbit_auth_mechanism_ssl_app.erl"],
-        outs = ["test/rabbit_auth_mechanism_ssl.beam", "test/rabbit_auth_mechanism_ssl_app.beam"],
+        srcs = native.glob(["src/**/*.erl"]),
+        hdrs = [":public_and_private_hdrs"],
         app_name = "rabbitmq_auth_mechanism_ssl",
+        dest = "test",
         erlc_opts = "//:test_erlc_opts",
         deps = ["//deps/rabbit_common:erlang_app"],
     )

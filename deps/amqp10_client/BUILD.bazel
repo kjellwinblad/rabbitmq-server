@@ -60,6 +60,7 @@ test_suite_beam_files(name = "test_suite_beam_files")
 rabbitmq_app(
     name = "erlang_app",
     srcs = [":all_srcs"],
+    hdrs = [":public_hdrs"],
     app_description = APP_DESCRIPTION,
     app_extra_keys = APP_EXTRA_KEYS,
     app_module = APP_MODULE,
@@ -71,6 +72,8 @@ rabbitmq_app(
         "ssl",
         "public_key",
     ],
+    license_files = [":license_files"],
+    priv = [":priv"],
     deps = ["//deps/amqp10_common:erlang_app"],
 )
 

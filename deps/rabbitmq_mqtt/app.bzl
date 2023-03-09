@@ -8,19 +8,26 @@ def all_beam_files(name = "all_beam_files"):
     )
     erlang_bytecode(
         name = "behaviours",
-        srcs = ["src/rabbit_mqtt_retained_msg_store.erl"],
-        outs = ["ebin/rabbit_mqtt_retained_msg_store.beam"],
-        hdrs = ["include/mqtt_machine.hrl", "include/mqtt_machine_v0.hrl", "include/rabbit_mqtt.hrl", "include/rabbit_mqtt_packet.hrl"],
+        srcs = [
+            "src/rabbit_mqtt_retained_msg_store.erl",
+        ],
+        hdrs = [":public_and_private_hdrs"],
         app_name = "rabbitmq_mqtt",
+        dest = "ebin",
         erlc_opts = "//:erlc_opts",
     )
     erlang_bytecode(
         name = "other_beam",
-        srcs = ["src/Elixir.RabbitMQ.CLI.Ctl.Commands.DecommissionMqttNodeCommand.erl", "src/Elixir.RabbitMQ.CLI.Ctl.Commands.ListMqttConnectionsCommand.erl", "src/mqtt_machine.erl", "src/mqtt_machine_v0.erl", "src/mqtt_node.erl", "src/rabbit_mqtt.erl", "src/rabbit_mqtt_collector.erl", "src/rabbit_mqtt_confirms.erl", "src/rabbit_mqtt_ff.erl", "src/rabbit_mqtt_internal_event_handler.erl", "src/rabbit_mqtt_keepalive.erl", "src/rabbit_mqtt_packet.erl", "src/rabbit_mqtt_processor.erl", "src/rabbit_mqtt_qos0_queue.erl", "src/rabbit_mqtt_reader.erl", "src/rabbit_mqtt_retained_msg_store_dets.erl", "src/rabbit_mqtt_retained_msg_store_ets.erl", "src/rabbit_mqtt_retained_msg_store_noop.erl", "src/rabbit_mqtt_retainer.erl", "src/rabbit_mqtt_retainer_sup.erl", "src/rabbit_mqtt_sup.erl", "src/rabbit_mqtt_util.erl"],
-        outs = ["ebin/Elixir.RabbitMQ.CLI.Ctl.Commands.DecommissionMqttNodeCommand.beam", "ebin/Elixir.RabbitMQ.CLI.Ctl.Commands.ListMqttConnectionsCommand.beam", "ebin/mqtt_machine.beam", "ebin/mqtt_machine_v0.beam", "ebin/mqtt_node.beam", "ebin/rabbit_mqtt.beam", "ebin/rabbit_mqtt_collector.beam", "ebin/rabbit_mqtt_confirms.beam", "ebin/rabbit_mqtt_ff.beam", "ebin/rabbit_mqtt_internal_event_handler.beam", "ebin/rabbit_mqtt_keepalive.beam", "ebin/rabbit_mqtt_packet.beam", "ebin/rabbit_mqtt_processor.beam", "ebin/rabbit_mqtt_qos0_queue.beam", "ebin/rabbit_mqtt_reader.beam", "ebin/rabbit_mqtt_retained_msg_store_dets.beam", "ebin/rabbit_mqtt_retained_msg_store_ets.beam", "ebin/rabbit_mqtt_retained_msg_store_noop.beam", "ebin/rabbit_mqtt_retainer.beam", "ebin/rabbit_mqtt_retainer_sup.beam", "ebin/rabbit_mqtt_sup.beam", "ebin/rabbit_mqtt_util.beam"],
-        hdrs = ["include/mqtt_machine.hrl", "include/mqtt_machine_v0.hrl", "include/rabbit_mqtt.hrl", "include/rabbit_mqtt_packet.hrl"],
+        srcs = native.glob(
+            ["src/**/*.erl"],
+            exclude = [
+                "src/rabbit_mqtt_retained_msg_store.erl",
+            ],
+        ),
+        hdrs = [":public_and_private_hdrs"],
         app_name = "rabbitmq_mqtt",
         beam = [":behaviours"],
+        dest = "ebin",
         erlc_opts = "//:erlc_opts",
         deps = ["//deps/rabbit:erlang_app", "//deps/rabbit_common:erlang_app", "//deps/rabbitmq_cli:erlang_app", "@ra//:erlang_app", "@ranch//:erlang_app"],
     )
@@ -34,76 +41,27 @@ def all_test_beam_files(name = "all_test_beam_files"):
     erlang_bytecode(
         name = "test_behaviours",
         testonly = True,
-        srcs = ["src/rabbit_mqtt_retained_msg_store.erl"],
-        outs = ["test/rabbit_mqtt_retained_msg_store.beam"],
-        hdrs = [
-            "include/mqtt_machine.hrl",
-            "include/mqtt_machine_v0.hrl",
-            "include/rabbit_mqtt.hrl",
-            "include/rabbit_mqtt_packet.hrl",
+        srcs = [
+            "src/rabbit_mqtt_retained_msg_store.erl",
         ],
+        hdrs = [":public_and_private_hdrs"],
         app_name = "rabbitmq_mqtt",
+        dest = "test",
         erlc_opts = "//:test_erlc_opts",
     )
     erlang_bytecode(
         name = "test_other_beam",
         testonly = True,
-        srcs = [
-            "src/Elixir.RabbitMQ.CLI.Ctl.Commands.DecommissionMqttNodeCommand.erl",
-            "src/Elixir.RabbitMQ.CLI.Ctl.Commands.ListMqttConnectionsCommand.erl",
-            "src/mqtt_machine.erl",
-            "src/mqtt_machine_v0.erl",
-            "src/mqtt_node.erl",
-            "src/rabbit_mqtt.erl",
-            "src/rabbit_mqtt_collector.erl",
-            "src/rabbit_mqtt_confirms.erl",
-            "src/rabbit_mqtt_ff.erl",
-            "src/rabbit_mqtt_internal_event_handler.erl",
-            "src/rabbit_mqtt_keepalive.erl",
-            "src/rabbit_mqtt_packet.erl",
-            "src/rabbit_mqtt_processor.erl",
-            "src/rabbit_mqtt_qos0_queue.erl",
-            "src/rabbit_mqtt_reader.erl",
-            "src/rabbit_mqtt_retained_msg_store_dets.erl",
-            "src/rabbit_mqtt_retained_msg_store_ets.erl",
-            "src/rabbit_mqtt_retained_msg_store_noop.erl",
-            "src/rabbit_mqtt_retainer.erl",
-            "src/rabbit_mqtt_retainer_sup.erl",
-            "src/rabbit_mqtt_sup.erl",
-            "src/rabbit_mqtt_util.erl",
-        ],
-        outs = [
-            "test/Elixir.RabbitMQ.CLI.Ctl.Commands.DecommissionMqttNodeCommand.beam",
-            "test/Elixir.RabbitMQ.CLI.Ctl.Commands.ListMqttConnectionsCommand.beam",
-            "test/mqtt_machine.beam",
-            "test/mqtt_machine_v0.beam",
-            "test/mqtt_node.beam",
-            "test/rabbit_mqtt.beam",
-            "test/rabbit_mqtt_collector.beam",
-            "test/rabbit_mqtt_confirms.beam",
-            "test/rabbit_mqtt_ff.beam",
-            "test/rabbit_mqtt_internal_event_handler.beam",
-            "test/rabbit_mqtt_keepalive.beam",
-            "test/rabbit_mqtt_packet.beam",
-            "test/rabbit_mqtt_processor.beam",
-            "test/rabbit_mqtt_qos0_queue.beam",
-            "test/rabbit_mqtt_reader.beam",
-            "test/rabbit_mqtt_retained_msg_store_dets.beam",
-            "test/rabbit_mqtt_retained_msg_store_ets.beam",
-            "test/rabbit_mqtt_retained_msg_store_noop.beam",
-            "test/rabbit_mqtt_retainer.beam",
-            "test/rabbit_mqtt_retainer_sup.beam",
-            "test/rabbit_mqtt_sup.beam",
-            "test/rabbit_mqtt_util.beam",
-        ],
-        hdrs = [
-            "include/mqtt_machine.hrl",
-            "include/mqtt_machine_v0.hrl",
-            "include/rabbit_mqtt.hrl",
-            "include/rabbit_mqtt_packet.hrl",
-        ],
+        srcs = native.glob(
+            ["src/**/*.erl"],
+            exclude = [
+                "src/rabbit_mqtt_retained_msg_store.erl",
+            ],
+        ),
+        hdrs = [":public_and_private_hdrs"],
         app_name = "rabbitmq_mqtt",
         beam = [":test_behaviours"],
+        dest = "test",
         erlc_opts = "//:test_erlc_opts",
         deps = [
             "//deps/rabbit:erlang_app",
@@ -123,53 +81,29 @@ def all_srcs(name = "all_srcs"):
         name = "public_and_private_hdrs",
         srcs = [":private_hdrs", ":public_hdrs"],
     )
-    filegroup(
-        name = "licenses",
-        srcs = ["LICENSE", "LICENSE-MPL-RabbitMQ"],
-    )
+
     filegroup(
         name = "priv",
-        srcs = ["priv/schema/rabbitmq_mqtt.schema"],
+        srcs = native.glob(["priv/**/*"]),
     )
     filegroup(
         name = "private_hdrs",
+        srcs = native.glob(["src/**/*.hrl"]),
     )
     filegroup(
         name = "srcs",
-        srcs = [
-            "src/Elixir.RabbitMQ.CLI.Ctl.Commands.DecommissionMqttNodeCommand.erl",
-            "src/Elixir.RabbitMQ.CLI.Ctl.Commands.ListMqttConnectionsCommand.erl",
-            "src/mqtt_machine.erl",
-            "src/mqtt_machine_v0.erl",
-            "src/mqtt_node.erl",
-            "src/rabbit_mqtt.erl",
-            "src/rabbit_mqtt_collector.erl",
-            "src/rabbit_mqtt_confirms.erl",
-            "src/rabbit_mqtt_ff.erl",
-            "src/rabbit_mqtt_internal_event_handler.erl",
-            "src/rabbit_mqtt_keepalive.erl",
-            "src/rabbit_mqtt_packet.erl",
-            "src/rabbit_mqtt_processor.erl",
-            "src/rabbit_mqtt_qos0_queue.erl",
-            "src/rabbit_mqtt_reader.erl",
-            "src/rabbit_mqtt_retained_msg_store.erl",
-            "src/rabbit_mqtt_retained_msg_store_dets.erl",
-            "src/rabbit_mqtt_retained_msg_store_ets.erl",
-            "src/rabbit_mqtt_retained_msg_store_noop.erl",
-            "src/rabbit_mqtt_retainer.erl",
-            "src/rabbit_mqtt_retainer_sup.erl",
-            "src/rabbit_mqtt_sup.erl",
-            "src/rabbit_mqtt_util.erl",
-        ],
+        srcs = native.glob([
+            "src/**/*.app.src",
+            "src/**/*.erl",
+        ]),
     )
     filegroup(
         name = "public_hdrs",
-        srcs = [
-            "include/mqtt_machine.hrl",
-            "include/mqtt_machine_v0.hrl",
-            "include/rabbit_mqtt.hrl",
-            "include/rabbit_mqtt_packet.hrl",
-        ],
+        srcs = native.glob(["include/**/*.hrl"]),
+    )
+    filegroup(
+        name = "license_files",
+        srcs = native.glob(["LICENSE*"]),
     )
 
 def test_suite_beam_files(name = "test_suite_beam_files"):

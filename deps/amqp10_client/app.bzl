@@ -8,34 +8,10 @@ def all_beam_files(name = "all_beam_files"):
     )
     erlang_bytecode(
         name = "other_beam",
-        srcs = [
-            "src/amqp10_client.erl",
-            "src/amqp10_client_app.erl",
-            "src/amqp10_client_connection.erl",
-            "src/amqp10_client_connection_sup.erl",
-            "src/amqp10_client_connections_sup.erl",
-            "src/amqp10_client_frame_reader.erl",
-            "src/amqp10_client_session.erl",
-            "src/amqp10_client_sessions_sup.erl",
-            "src/amqp10_client_sup.erl",
-            "src/amqp10_client_types.erl",
-            "src/amqp10_msg.erl",
-        ],
-        outs = [
-            "ebin/amqp10_client.beam",
-            "ebin/amqp10_client_app.beam",
-            "ebin/amqp10_client_connection.beam",
-            "ebin/amqp10_client_connection_sup.beam",
-            "ebin/amqp10_client_connections_sup.beam",
-            "ebin/amqp10_client_frame_reader.beam",
-            "ebin/amqp10_client_session.beam",
-            "ebin/amqp10_client_sessions_sup.beam",
-            "ebin/amqp10_client_sup.beam",
-            "ebin/amqp10_client_types.beam",
-            "ebin/amqp10_msg.beam",
-        ],
-        hdrs = ["src/amqp10_client.hrl"],
+        srcs = native.glob(["src/**/*.erl"]),
+        hdrs = [":public_and_private_hdrs"],
         app_name = "amqp10_client",
+        dest = "ebin",
         erlc_opts = "//:erlc_opts",
         deps = ["//deps/amqp10_common:erlang_app"],
     )
@@ -49,34 +25,10 @@ def all_test_beam_files(name = "all_test_beam_files"):
     erlang_bytecode(
         name = "test_other_beam",
         testonly = True,
-        srcs = [
-            "src/amqp10_client.erl",
-            "src/amqp10_client_app.erl",
-            "src/amqp10_client_connection.erl",
-            "src/amqp10_client_connection_sup.erl",
-            "src/amqp10_client_connections_sup.erl",
-            "src/amqp10_client_frame_reader.erl",
-            "src/amqp10_client_session.erl",
-            "src/amqp10_client_sessions_sup.erl",
-            "src/amqp10_client_sup.erl",
-            "src/amqp10_client_types.erl",
-            "src/amqp10_msg.erl",
-        ],
-        outs = [
-            "test/amqp10_client.beam",
-            "test/amqp10_client_app.beam",
-            "test/amqp10_client_connection.beam",
-            "test/amqp10_client_connection_sup.beam",
-            "test/amqp10_client_connections_sup.beam",
-            "test/amqp10_client_frame_reader.beam",
-            "test/amqp10_client_session.beam",
-            "test/amqp10_client_sessions_sup.beam",
-            "test/amqp10_client_sup.beam",
-            "test/amqp10_client_types.beam",
-            "test/amqp10_msg.beam",
-        ],
-        hdrs = ["src/amqp10_client.hrl"],
+        srcs = native.glob(["src/**/*.erl"]),
+        hdrs = [":public_and_private_hdrs"],
         app_name = "amqp10_client",
+        dest = "test",
         erlc_opts = "//:test_erlc_opts",
         deps = ["//deps/amqp10_common:erlang_app"],
     )
@@ -92,33 +44,27 @@ def all_srcs(name = "all_srcs"):
     )
     filegroup(
         name = "priv",
+        srcs = native.glob(["priv/**/*"]),
     )
-    filegroup(
-        name = "licenses",
-        srcs = ["LICENSE", "LICENSE-MPL-RabbitMQ"],
-    )
+
     filegroup(
         name = "srcs",
-        srcs = [
-            "src/amqp10_client.erl",
-            "src/amqp10_client_app.erl",
-            "src/amqp10_client_connection.erl",
-            "src/amqp10_client_connection_sup.erl",
-            "src/amqp10_client_connections_sup.erl",
-            "src/amqp10_client_frame_reader.erl",
-            "src/amqp10_client_session.erl",
-            "src/amqp10_client_sessions_sup.erl",
-            "src/amqp10_client_sup.erl",
-            "src/amqp10_client_types.erl",
-            "src/amqp10_msg.erl",
-        ],
+        srcs = native.glob([
+            "src/**/*.app.src",
+            "src/**/*.erl",
+        ]),
     )
     filegroup(
         name = "private_hdrs",
-        srcs = ["src/amqp10_client.hrl"],
+        srcs = native.glob(["src/**/*.hrl"]),
     )
     filegroup(
         name = "public_hdrs",
+        srcs = native.glob(["include/**/*.hrl"]),
+    )
+    filegroup(
+        name = "license_files",
+        srcs = native.glob(["LICENSE*"]),
     )
 
 def test_suite_beam_files(name = "test_suite_beam_files"):

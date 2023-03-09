@@ -8,55 +8,26 @@ def all_beam_files(name = "all_beam_files"):
     )
     erlang_bytecode(
         name = "behaviours",
-        srcs = ["src/rabbit_shovel_behaviour.erl"],
-        outs = ["ebin/rabbit_shovel_behaviour.beam"],
-        hdrs = ["include/logging.hrl", "include/rabbit_shovel.hrl"],
+        srcs = [
+            "src/rabbit_shovel_behaviour.erl",
+        ],
+        hdrs = [":public_and_private_hdrs"],
         app_name = "rabbitmq_shovel",
+        dest = "ebin",
         erlc_opts = "//:erlc_opts",
     )
     erlang_bytecode(
         name = "other_beam",
-        srcs = [
-            "src/Elixir.RabbitMQ.CLI.Ctl.Commands.DeleteShovelCommand.erl",
-            "src/Elixir.RabbitMQ.CLI.Ctl.Commands.RestartShovelCommand.erl",
-            "src/Elixir.RabbitMQ.CLI.Ctl.Commands.ShovelStatusCommand.erl",
-            "src/rabbit_amqp091_shovel.erl",
-            "src/rabbit_amqp10_shovel.erl",
-            "src/rabbit_log_shovel.erl",
-            "src/rabbit_shovel.erl",
-            "src/rabbit_shovel_config.erl",
-            "src/rabbit_shovel_dyn_worker_sup.erl",
-            "src/rabbit_shovel_dyn_worker_sup_sup.erl",
-            "src/rabbit_shovel_locks.erl",
-            "src/rabbit_shovel_parameters.erl",
-            "src/rabbit_shovel_status.erl",
-            "src/rabbit_shovel_sup.erl",
-            "src/rabbit_shovel_util.erl",
-            "src/rabbit_shovel_worker.erl",
-            "src/rabbit_shovel_worker_sup.erl",
-        ],
-        outs = [
-            "ebin/Elixir.RabbitMQ.CLI.Ctl.Commands.DeleteShovelCommand.beam",
-            "ebin/Elixir.RabbitMQ.CLI.Ctl.Commands.RestartShovelCommand.beam",
-            "ebin/Elixir.RabbitMQ.CLI.Ctl.Commands.ShovelStatusCommand.beam",
-            "ebin/rabbit_amqp091_shovel.beam",
-            "ebin/rabbit_amqp10_shovel.beam",
-            "ebin/rabbit_log_shovel.beam",
-            "ebin/rabbit_shovel.beam",
-            "ebin/rabbit_shovel_config.beam",
-            "ebin/rabbit_shovel_dyn_worker_sup.beam",
-            "ebin/rabbit_shovel_dyn_worker_sup_sup.beam",
-            "ebin/rabbit_shovel_locks.beam",
-            "ebin/rabbit_shovel_parameters.beam",
-            "ebin/rabbit_shovel_status.beam",
-            "ebin/rabbit_shovel_sup.beam",
-            "ebin/rabbit_shovel_util.beam",
-            "ebin/rabbit_shovel_worker.beam",
-            "ebin/rabbit_shovel_worker_sup.beam",
-        ],
-        hdrs = ["include/logging.hrl", "include/rabbit_shovel.hrl"],
+        srcs = native.glob(
+            ["src/**/*.erl"],
+            exclude = [
+                "src/rabbit_shovel_behaviour.erl",
+            ],
+        ),
+        hdrs = [":public_and_private_hdrs"],
         app_name = "rabbitmq_shovel",
         beam = [":behaviours"],
+        dest = "ebin",
         erlc_opts = "//:erlc_opts",
         deps = [
             "//deps/amqp_client:erlang_app",
@@ -75,59 +46,27 @@ def all_test_beam_files(name = "all_test_beam_files"):
     erlang_bytecode(
         name = "test_behaviours",
         testonly = True,
-        srcs = ["src/rabbit_shovel_behaviour.erl"],
-        outs = ["test/rabbit_shovel_behaviour.beam"],
-        hdrs = ["include/logging.hrl", "include/rabbit_shovel.hrl"],
+        srcs = [
+            "src/rabbit_shovel_behaviour.erl",
+        ],
+        hdrs = [":public_and_private_hdrs"],
         app_name = "rabbitmq_shovel",
+        dest = "test",
         erlc_opts = "//:test_erlc_opts",
     )
     erlang_bytecode(
         name = "test_other_beam",
         testonly = True,
-        srcs = [
-            "src/Elixir.RabbitMQ.CLI.Ctl.Commands.DeleteShovelCommand.erl",
-            "src/Elixir.RabbitMQ.CLI.Ctl.Commands.RestartShovelCommand.erl",
-            "src/Elixir.RabbitMQ.CLI.Ctl.Commands.ShovelStatusCommand.erl",
-            "src/rabbit_amqp091_shovel.erl",
-            "src/rabbit_amqp10_shovel.erl",
-            "src/rabbit_log_shovel.erl",
-            "src/rabbit_shovel.erl",
-            "src/rabbit_shovel_config.erl",
-            "src/rabbit_shovel_dyn_worker_sup.erl",
-            "src/rabbit_shovel_dyn_worker_sup_sup.erl",
-            "src/rabbit_shovel_locks.erl",
-            "src/rabbit_shovel_parameters.erl",
-            "src/rabbit_shovel_status.erl",
-            "src/rabbit_shovel_sup.erl",
-            "src/rabbit_shovel_util.erl",
-            "src/rabbit_shovel_worker.erl",
-            "src/rabbit_shovel_worker_sup.erl",
-        ],
-        outs = [
-            "test/Elixir.RabbitMQ.CLI.Ctl.Commands.DeleteShovelCommand.beam",
-            "test/Elixir.RabbitMQ.CLI.Ctl.Commands.RestartShovelCommand.beam",
-            "test/Elixir.RabbitMQ.CLI.Ctl.Commands.ShovelStatusCommand.beam",
-            "test/rabbit_amqp091_shovel.beam",
-            "test/rabbit_amqp10_shovel.beam",
-            "test/rabbit_log_shovel.beam",
-            "test/rabbit_shovel.beam",
-            "test/rabbit_shovel_config.beam",
-            "test/rabbit_shovel_dyn_worker_sup.beam",
-            "test/rabbit_shovel_dyn_worker_sup_sup.beam",
-            "test/rabbit_shovel_locks.beam",
-            "test/rabbit_shovel_parameters.beam",
-            "test/rabbit_shovel_status.beam",
-            "test/rabbit_shovel_sup.beam",
-            "test/rabbit_shovel_util.beam",
-            "test/rabbit_shovel_worker.beam",
-            "test/rabbit_shovel_worker_sup.beam",
-        ],
-        hdrs = [
-            "include/logging.hrl",
-            "include/rabbit_shovel.hrl",
-        ],
+        srcs = native.glob(
+            ["src/**/*.erl"],
+            exclude = [
+                "src/rabbit_shovel_behaviour.erl",
+            ],
+        ),
+        hdrs = [":public_and_private_hdrs"],
         app_name = "rabbitmq_shovel",
         beam = [":test_behaviours"],
+        dest = "test",
         erlc_opts = "//:test_erlc_opts",
         deps = [
             "//deps/amqp_client:erlang_app",
@@ -146,46 +85,30 @@ def all_srcs(name = "all_srcs"):
         name = "public_and_private_hdrs",
         srcs = [":private_hdrs", ":public_hdrs"],
     )
-    filegroup(
-        name = "licenses",
-        srcs = ["LICENSE", "LICENSE-MPL-RabbitMQ"],
-    )
+
     filegroup(
         name = "priv",
+        srcs = native.glob(["priv/**/*"]),
     )
 
     filegroup(
         name = "srcs",
-        srcs = [
-            "src/Elixir.RabbitMQ.CLI.Ctl.Commands.DeleteShovelCommand.erl",
-            "src/Elixir.RabbitMQ.CLI.Ctl.Commands.RestartShovelCommand.erl",
-            "src/Elixir.RabbitMQ.CLI.Ctl.Commands.ShovelStatusCommand.erl",
-            "src/rabbit_amqp091_shovel.erl",
-            "src/rabbit_amqp10_shovel.erl",
-            "src/rabbit_log_shovel.erl",
-            "src/rabbit_shovel.erl",
-            "src/rabbit_shovel_behaviour.erl",
-            "src/rabbit_shovel_config.erl",
-            "src/rabbit_shovel_dyn_worker_sup.erl",
-            "src/rabbit_shovel_dyn_worker_sup_sup.erl",
-            "src/rabbit_shovel_locks.erl",
-            "src/rabbit_shovel_parameters.erl",
-            "src/rabbit_shovel_status.erl",
-            "src/rabbit_shovel_sup.erl",
-            "src/rabbit_shovel_util.erl",
-            "src/rabbit_shovel_worker.erl",
-            "src/rabbit_shovel_worker_sup.erl",
-        ],
+        srcs = native.glob([
+            "src/**/*.app.src",
+            "src/**/*.erl",
+        ]),
     )
     filegroup(
         name = "public_hdrs",
-        srcs = [
-            "include/logging.hrl",
-            "include/rabbit_shovel.hrl",
-        ],
+        srcs = native.glob(["include/**/*.hrl"]),
     )
     filegroup(
         name = "private_hdrs",
+        srcs = native.glob(["src/**/*.hrl"]),
+    )
+    filegroup(
+        name = "license_files",
+        srcs = native.glob(["LICENSE*"]),
     )
 
 def test_suite_beam_files(name = "test_suite_beam_files"):

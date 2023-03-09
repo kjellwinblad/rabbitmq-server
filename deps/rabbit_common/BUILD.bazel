@@ -122,6 +122,8 @@ rabbitmq_app(
         "os_mon",
         "runtime_tools",
     ],
+    license_files = [":license_files"],
+    priv = [":priv"],
     deps = [
         "@credentials_obfuscation//:erlang_app",
         "@ranch//:erlang_app",  # keep
