@@ -192,7 +192,8 @@ process_connect(
                        'Maximum-Packet-Size' => persistent_term:get(
                                                   ?PERSISTENT_TERM_MAX_PACKET_SIZE_AUTHENTICATED),
                        'Subscription-Identifier-Available' => 0,
-                       'Shared-Subscription-Available' => 0
+                       'Shared-Subscription-Available' => 0,
+                       'Wildcard-Subscription-Available' => 0
                       },
             Props = case {ClientId0, ProtoVer} of
                         {<<>>, 5} ->

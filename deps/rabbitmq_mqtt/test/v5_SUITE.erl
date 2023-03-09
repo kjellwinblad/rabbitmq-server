@@ -44,7 +44,8 @@ cluster_size_1_tests() ->
      message_expiry_interval_retained_message,
      client_publish_qos2,
      client_rejects_publish,
-     will_qos2
+     will_qos2,
+     connect_success_connack
     ].
 
 cluster_size_3_tests() ->
@@ -301,6 +302,16 @@ will_qos2(Config) ->
     {C, Connect} = start_client(ClientId, Config, 0, Opts),
     unlink(C),
     ?assertEqual({error, {qos_not_supported, #{}}}, Connect(C)).
+
+connect_success_connack(Config) ->
+    ClientId = atom_to_binary(?FUNCTION_NAME),
+    {C, Connect} = start_client(ClientId, Config, 0, []),
+    ?assertMatch({ok, #{'Maximum-QoS' := 1,
+                        'Maximum-Packet-Size' := 268435455,
+                        'Subscription-Identifier-Available' := 0,
+                        'Shared-Subscription-Available' := 0,
+                        'Wildcard-Subscription-Available' := 0}}, Connect(C)),
+    ok = emqtt:disconnect(C).
 
 satisfy_bazel(_Config) ->
     ok.
