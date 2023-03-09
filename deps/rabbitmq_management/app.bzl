@@ -8,9 +8,7 @@ def all_beam_files(name = "all_beam_files"):
     )
     erlang_bytecode(
         name = "behaviours",
-        srcs = [
-            "src/rabbit_mgmt_extension.erl",
-        ],
+        srcs = ["src/rabbit_mgmt_extension.erl"],
         hdrs = [":public_and_private_hdrs"],
         app_name = "rabbitmq_management",
         dest = "ebin",
@@ -46,9 +44,7 @@ def all_test_beam_files(name = "all_test_beam_files"):
     erlang_bytecode(
         name = "test_behaviours",
         testonly = True,
-        srcs = [
-            "src/rabbit_mgmt_extension.erl",
-        ],
+        srcs = ["src/rabbit_mgmt_extension.erl"],
         hdrs = [":public_and_private_hdrs"],
         app_name = "rabbitmq_management",
         dest = "test",

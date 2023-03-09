@@ -31,10 +31,10 @@ def all_beam_files(name = "all_beam_files"):
                 "src/gen_server2.erl",
                 "src/rabbit_authn_backend.erl",
                 "src/rabbit_authz_backend.erl",
-                "src/rabbit_password_hashing.erl",
-                "src/rabbit_registry_class.erl",
                 "src/rabbit_framing_amqp_0_8.erl",  # keep
                 "src/rabbit_framing_amqp_0_9_1.erl",  # keep
+                "src/rabbit_password_hashing.erl",
+                "src/rabbit_registry_class.erl",
             ],
         ),
         hdrs = [":public_and_private_hdrs"],
@@ -77,10 +77,10 @@ def all_test_beam_files(name = "all_test_beam_files"):
                 "src/gen_server2.erl",
                 "src/rabbit_authn_backend.erl",
                 "src/rabbit_authz_backend.erl",
-                "src/rabbit_password_hashing.erl",
-                "src/rabbit_registry_class.erl",
                 "src/rabbit_framing_amqp_0_8.erl",  # keep
                 "src/rabbit_framing_amqp_0_9_1.erl",  # keep
+                "src/rabbit_password_hashing.erl",
+                "src/rabbit_registry_class.erl",
             ],
         ),
         hdrs = [":public_and_private_hdrs"],

@@ -8,9 +8,7 @@ def all_beam_files(name = "all_beam_files"):
     )
     erlang_bytecode(
         name = "behaviours",
-        srcs = [
-            "src/rabbit_auth_cache.erl",
-        ],
+        srcs = ["src/rabbit_auth_cache.erl"],
         hdrs = [":public_and_private_hdrs"],
         app_name = "rabbitmq_auth_backend_cache",
         dest = "ebin",
@@ -41,9 +39,7 @@ def all_test_beam_files(name = "all_test_beam_files"):
     erlang_bytecode(
         name = "test_behaviours",
         testonly = True,
-        srcs = [
-            "src/rabbit_auth_cache.erl",
-        ],
+        srcs = ["src/rabbit_auth_cache.erl"],
         hdrs = [":public_and_private_hdrs"],
         app_name = "rabbitmq_auth_backend_cache",
         dest = "test",
